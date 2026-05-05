@@ -156,3 +156,9 @@ tests/
 ## Licence
 
 MIT
+---
+### 🚩 Safety & Liability Disclaimer
+* **Experimental Use:** This protocol is currently in a research/beta stage. It is designed to assist in monitoring AI reliability but should not be the sole decision-maker in life-critical or high-risk financial environments.
+* **No Liability:** The authors and contributors are not responsible for any misuse, data loss, or unintended consequences resulting from the integration of this protocol. 
+* **Privacy:** Ensure you anonymize sensitive patient or customer data before running fidelity audits to remain compliant with local regulations.
+
