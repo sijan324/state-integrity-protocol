@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "state-integrity-protocol"
+version = "0.1.0"
+description = "Fidelity-Flow Observation – detect and measure State Decay in multi-agent AI pipelines."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["ai", "agents", "drift-detection", "semantic-anchor", "llm"]
+dependencies = [
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "scikit-learn>=1.2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
