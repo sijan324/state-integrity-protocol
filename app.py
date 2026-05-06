@@ -4,91 +4,157 @@ import numpy as np
 import plotly.express as px
 from sip.protocol import StateIntegrityProtocol
 
-# --- 1. Page Config ---
-st.set_page_config(page_title="State Flow Lens", layout="wide")
+# =========================
+# 1. PAGE CONFIG
+# =========================
+st.set_page_config(page_title="State Flow Lens", page_icon="🧬", layout="wide")
 
-# Custom UI for 2-Second Understanding
+# =========================
+# 2. CUSTOM UI
+# =========================
 st.markdown(
     """
     <style>
-    .main { background-color: #0e1117; color: white; }
-    .stMetric { background-color: #1f2937; padding: 20px; border-radius: 15px; border-left: 10px solid #2563eb; }
+    .main {
+        background-color: #0e1117;
+        color: white;
+    }
+    .stMetric {
+        background-color: #1f2937;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 8px solid #2563eb;
+    }
+    .stButton>button {
+        border-radius: 8px;
+        height: 3em;
+        background-color: #2563eb;
+        color: white;
+        font-weight: bold;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+# =========================
+# 3. HEADER
+# =========================
 st.title("🧬 State Flow Lens")
-st.subheader("Is your AI wasting your money? Find out in seconds.")
+st.subheader("Is your AI losing focus—and costing you money? Find out in seconds.")
 
+st.markdown(
+    "💡 Paste your AI workflow and instantly detect where it drifts from the original goal."
+)
+
+# =========================
+# 4. LAYOUT
+# =========================
 col_in, col_out = st.columns([1, 1.5])
 
+# =========================
+# 5. INPUT SECTION
+# =========================
 with col_in:
-    st.write("### 📥 1. Paste your AI Logs")
-    intent = st.text_input(
-        "What was the AI supposed to do?", value="Analyze Q3 Financials"
-    )
-    logs = st.text_area(
-        "What did the AI actually say? (One line per step)",
-        height=250,
-        value="Step 1: Extracting revenue\nStep 2: Checking pizza prices\nStep 3: Comparing crust types",
-    )
-    runs = st.number_input("How many times does this run per month?", value=1000)
-    audit_btn = st.button("🚀 Check for Money Leakage", use_container_width=True)
+    st.write("### 📥 Input")
 
-# --- 2. Simple Logic ---
+    intent = st.text_input("Original Goal", value="Analyze Q3 Financials")
+
+    logs = st.text_area(
+        "AI Steps (one per line)",
+        height=250,
+        value="""Extract revenue data
+Analyze performance trends
+Compare year-over-year growth
+Generate summary report""",
+    )
+
+    runs = st.number_input("Monthly Runs", value=1000, step=100)
+
+    run_btn = st.button("🚀 Analyze AI Drift", use_container_width=True)
+
+# =========================
+# 6. ENGINE
+# =========================
 sip = StateIntegrityProtocol(threshold=0.35)
 
-if audit_btn and logs and intent:
+# =========================
+# 7. OUTPUT
+# =========================
+if run_btn and intent and logs:
     steps = [s.strip() for s in logs.split("\n") if s.strip()]
-    sip.anchor(intent)
-    drifts = [sip.observe(s).drift for s in steps]
-    avg_drift = np.mean(drifts)
 
-    # Simple Money Calculation ($0.03 is the industry avg)
-    monthly_waste = (avg_drift * 100 * 0.03) * runs
+    try:
+        sip.anchor(intent)
+        drifts = [sip.observe(s).drift for s in steps]
 
-    with col_out:
-        st.write("### 📊 2. Your Results")
+        avg_drift = np.mean(drifts)
+        peak_drift = max(drifts)
 
-        # Big Visual Metrics
-        m1, m2 = st.columns(2)
+        # simple cost model
+        cost_per_run = 0.03
+        monthly_cost = (avg_drift * 100 * cost_per_run) * runs
 
-        # Color coding the result
-        if avg_drift < 0.20:
-            status = "✅ HEALTHY"
-            color = "inverse"
-            msg = "Your AI is on track. Efficiency is high."
-        elif avg_drift < 0.40:
-            status = "⚠️ WARNING"
-            color = "off"
-            msg = "Your AI is starting to drift. You are losing money."
-        else:
-            status = "🚨 CRITICAL"
-            color = "normal"
-            msg = "Your AI has failed. Most of this compute is wasted."
+        # =========================
+        # RESULTS
+        # =========================
+        with col_out:
+            st.write("### 📊 Results")
 
-        m1.metric("System Health", status)
-        m2.metric(
-            "Monthly Money Leakage",
-            f"${round(monthly_waste, 2)}",
-            delta="Waste",
-            delta_color=color,
-        )
+            col1, col2 = st.columns(2)
 
-        # Simple Graph
-        df = pd.DataFrame({"Step": range(1, len(drifts) + 1), "WasteLevel": drifts})
-        fig = px.bar(
-            df,
-            x="Step",
-            y="WasteLevel",
-            title="Where is the money leaking?",
-            color="WasteLevel",
-            color_continuous_scale=["green", "yellow", "red"],
-        )
-        st.plotly_chart(fig, use_container_width=True)
+            col1.metric("Goal Drift", f"{round(avg_drift * 100, 1)}%")
 
-        st.info(msg)
+            col2.metric("Peak Drift", f"{round(peak_drift, 2)}")
 
+            # STATUS LOGIC
+            if avg_drift < 0.20:
+                status = "✅ Healthy"
+                msg = "Your AI is aligned and efficient."
+            elif avg_drift < 0.40:
+                status = "⚠️ Warning"
+                msg = "Your AI is drifting from its goal."
+            else:
+                status = "🚨 Critical"
+                msg = "Severe goal loss detected. High inefficiency."
+
+            st.subheader(status)
+
+            st.metric(
+                "Estimated Monthly Cost Loss",
+                f"${round(monthly_cost, 2)}",
+                delta="Hidden AI Waste",
+            )
+
+            st.info(msg)
+
+            # =========================
+            # CHART
+            # =========================
+            df = pd.DataFrame(
+                {"Step": range(1, len(drifts) + 1), "Drift Score": drifts}
+            )
+
+            fig = px.line(
+                df,
+                x="Step",
+                y="Drift Score",
+                title="AI Goal Drift Over Time",
+                markers=True,
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+# =========================
+# 8. FOOTER CTA
+# =========================
 st.divider()
-st.write("📩 **Want to stop the leak?** Contact: sijangautamx@gmail.com")
+
+st.markdown("### 💡 Stop AI waste before it scales.")
+
+st.markdown("📩 Contact: sijangautamx@gmail.com")
+
+st.caption("State Flow Lens | AI Drift Intelligence System")
