@@ -197,6 +197,23 @@ tests/
 
 ---
 
+## ☁️ SIP Cloud — Production Upgrade
+
+The open-source SDK is free forever.  For teams running agents at scale, **SIP Cloud** adds:
+
+| Feature | Open-Source | SIP Cloud |
+|---|---|---|
+| Drift detection & realignment | ✅ | ✅ |
+| CrewAI / LangChain integration | ✅ | ✅ |
+| Hosted dashboard & audit logs | ❌ | ✅ |
+| Team collaboration & alerts | ❌ | ✅ |
+| Compliance-ready PDF reports | ❌ | ✅ |
+| Priority support | ❌ | ✅ |
+
+**[→ Join the Early-Access Waitlist](https://forms.gle/placeholder)** — limited spots for founding teams.
+
+---
+
 ## Licence
 
 MIT
