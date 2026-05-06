@@ -4,27 +4,12 @@ import numpy as np
 import plotly.express as px
 from sip.protocol import StateIntegrityProtocol
 
-# --- CONFIG ---
-st.set_page_config(page_title="State Flow Lens", layout="centered")
+st.set_page_config(page_title="State Flow Lens", layout="wide")
 
-# --- STYLE ---
-st.markdown(
-    """
-<style>
-.main {
-    background-color: #0e1117;
-    color: #ffffff;
-}
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-# --- TITLE ---
 st.title("🧬 State Flow Lens")
-st.markdown("Detect intent loss in AI workflows in seconds.")
+st.markdown("Real-time detection of intent loss in AI workflows.")
 
-# --- DEMO INPUT ---
+# --- INPUT ---
 initial_intent = st.text_input(
     "System Anchor", value="Summarize Q3 earnings call into key bullet points"
 )
@@ -37,48 +22,61 @@ Summarize key financial highlights
 Generate final bullet points""",
 )
 
-run_demo = st.button("🚀 Run Demo", use_container_width=True)
+run = st.button("🚀 Run Analysis", use_container_width=True)
 
-# --- SIP ENGINE ---
+# --- ADVANCED TOGGLE ---
+advanced = st.checkbox("🔓 Show Advanced Analytics")
+
 sip = StateIntegrityProtocol(threshold=0.35)
 
-# --- RUN DEMO ---
-if run_demo:
+if run:
     steps = [s.strip() for s in raw_steps.split("\n") if s.strip()]
 
-    try:
-        sip.anchor(initial_intent)
-        results = [sip.observe(s) for s in steps]
-        drifts = [r.drift for r in results]
+    sip.anchor(initial_intent)
+    results = [sip.observe(s) for s in steps]
+    drifts = [r.drift for r in results]
 
-        avg_drift = np.mean(drifts)
+    avg_drift = np.mean(drifts)
+    peak_drift = max(drifts)
 
-        st.subheader("📊 Results")
+    st.subheader("📊 Core Insights")
 
-        col1, col2 = st.columns(2)
-        col1.metric("Avg Intent Loss", f"{round(avg_drift * 100, 1)}%")
-        col2.metric("Steps Analyzed", len(steps))
+    col1, col2 = st.columns(2)
+    col1.metric("Avg Intent Loss", f"{round(avg_drift * 100, 1)}%")
+    col2.metric("Peak Drift", f"{round(peak_drift, 2)}")
 
-        df = pd.DataFrame({"Step": range(1, len(drifts) + 1), "Loss": drifts})
+    # Graph
+    df = pd.DataFrame({"Step": range(1, len(drifts) + 1), "Loss": drifts})
+    fig = px.area(
+        df, x="Step", y="Loss", title="Intent Drift Over Time", template="plotly_dark"
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-        fig = px.line(
-            df,
-            x="Step",
-            y="Loss",
-            title="Intent Drift Over Steps",
-            template="plotly_dark",
-        )
+    # Simple insight
+    if avg_drift > 0.35:
+        st.warning("⚠️ High intent decay detected. System may be misaligned.")
+    else:
+        st.success("✅ System alignment is stable.")
 
-        st.plotly_chart(fig, use_container_width=True)
+    # --- ADVANCED SECTION ---
+    if advanced:
+        st.divider()
+        st.subheader("💰 Advanced Analytics")
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+        cost_per_token = st.number_input("Cost per 1k tokens ($)", value=0.03)
+        runs_per_month = st.number_input("Monthly runs", value=1000)
+
+        monthly_waste = ((avg_drift * 100) * cost_per_token) * runs_per_month
+
+        col3, col4 = st.columns(2)
+        col3.metric("Estimated Monthly Waste", f"${round(monthly_waste, 2)}")
+        col4.metric("Efficiency Score", f"{round((1 - avg_drift) * 100, 1)}%")
+
+        st.info("💡 Higher drift directly increases operational cost in AI systems.")
 
 # --- CTA ---
 st.divider()
-st.markdown("### 🚀 Need full enterprise audit & reports?")
+st.markdown("### 🚀 Need full enterprise audit & reporting?")
 st.markdown("📩 Contact: sijangautamx@gmail.com")
 
-# --- FOOTER ---
-st.markdown("---")
 st.caption("State Flow Lens | Open Core Demo")
