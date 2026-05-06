@@ -81,7 +81,7 @@ if run_audit and raw_steps and initial_intent:
                     delta_color="inverse",
                 )
 
-                # Visual Entropy Mapping
+                # Visual Entropy Mapping - FIXED COLUMN NAMES
                 df = pd.DataFrame(
                     {
                         "Step": range(1, len(drifts) + 1),
@@ -93,10 +93,11 @@ if run_audit and raw_steps and initial_intent:
                     }
                 )
 
+                # Using 'Fidelity Loss' to match the DataFrame exactly
                 fig = px.area(
                     df,
                     x="Step",
-                    y="Loss",
+                    y="Fidelity Loss",
                     color="Status",
                     title="Semantic Entropy Mapping",
                     color_discrete_map={
@@ -114,4 +115,4 @@ if run_audit and raw_steps and initial_intent:
         except Exception as e:
             st.error(f"Audit Engine Error: {e}")
 
-st.sidebar.info("State Flow Lens v1.2.1 | Infrastructure Verification Layer")
+st.sidebar.info("State Flow Lens v1.2.2 | Infrastructure Verification Layer")
