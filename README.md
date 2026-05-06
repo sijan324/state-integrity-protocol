@@ -5,6 +5,26 @@ information fidelity loss – in multi-agent AI pipelines and LLM chains.
 
 ---
 
+## 🛡️ 3-Line CrewAI Integration
+
+Secure your autonomous agents against State Decay in seconds:
+
+```python
+from sip.integrations import CrewIntegrityManager
+
+# 1. Initialise the Guard
+guard = CrewIntegrityManager(goal="Research Q3 Financials", threshold=0.35)
+
+# 2. Inject into your Agent
+agent = Agent(role="Analyst", goal="...", step_callback=guard.enforce)
+
+# 3. SIP now automatically injects system-level realignment payloads when the agent drifts.
+```
+
+> **Zero latency** – guardrail checks run in milliseconds using a local TF-IDF embedder (no API key required).
+
+---
+
 ## The Problem: State Decay in AI Agents
 
 Current multi-agent systems (LangChain, CrewAI, AutoGPT) suffer from **State
@@ -102,6 +122,26 @@ for record in sip.history:
 
 ## API Reference
 
+### `SIPGuard`
+
+High-level gatekeeper. Each `check()` call returns a decision dict with keys
+`drift`, `action` (`"ALLOW"` / `"WARN"` / `"BLOCK"` / `"REALIGN"`), and
+`payload` (a ready-to-inject system-message dict on `REALIGN`, otherwise
+`None`).
+
+| Method / Property | Description |
+|---|---|
+| `anchor(text)` | Set the semantic anchor (original goal) |
+| `check(step_output) → dict` | Observe output and return a gatekeeper decision |
+
+### `CrewIntegrityManager`
+
+Plug-and-play hook for CrewAI's `step_callback`.
+
+| Method / Property | Description |
+|---|---|
+| `enforce(step_output)` | Returns guardrail payload on `REALIGN`, raises on `BLOCK`, `None` on `ALLOW` |
+
 ### `StateIntegrityProtocol`
 
 | Method / Property | Description |
@@ -142,13 +182,17 @@ pytest tests/ -v
 
 ```
 sip/
-├── __init__.py       # Public re-exports
-├── anchor.py         # SemanticAnchor – captures the origin embedding
-├── embeddings.py     # Default TF-IDF embedding (no API key required)
-├── observer.py       # FidelityObserver – drift computation & history
-└── protocol.py       # StateIntegrityProtocol – top-level orchestrator
+├── __init__.py            # Public re-exports
+├── anchor.py              # SemanticAnchor – captures the origin embedding
+├── embeddings.py          # Default TF-IDF embedding (no API key required)
+├── guard.py               # SIPGuard – gatekeeper with ALLOW/WARN/BLOCK/REALIGN decisions
+├── observer.py            # FidelityObserver – drift computation & history
+├── protocol.py            # StateIntegrityProtocol – top-level orchestrator
+└── integrations/
+    ├── __init__.py
+    └── crew_guard.py      # CrewIntegrityManager – plug-and-play CrewAI step_callback
 tests/
-└── test_sip.py       # 40 pytest tests
+└── test_sip.py            # 40 pytest tests
 ```
 
 ---
