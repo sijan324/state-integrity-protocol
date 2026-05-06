@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from sip.protocol import StateIntegrityProtocol
+from sip import StateIntegrityProtocol
 
 # =========================
 # 1. PAGE CONFIG
@@ -69,14 +69,31 @@ Compare year-over-year growth
 Generate summary report""",
     )
 
-    runs = st.number_input("Monthly Runs", value=1000, step=100)
+    runs = st.number_input("Monthly Runs", value=1000, step=100, min_value=0)
+
+    threshold = st.slider(
+        "Drift Threshold",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.35,
+        step=0.01,
+        help="Realignment triggers when drift > threshold.",
+    )
+
+    cost_per_run = st.number_input(
+        "Cost per Run ($) — demo model",
+        value=0.03,
+        step=0.01,
+        min_value=0.0,
+        help="Toy model input for showing potential waste impact.",
+    )
 
     run_btn = st.button("🚀 Analyze AI Drift", use_container_width=True)
 
 # =========================
 # 6. ENGINE
 # =========================
-sip = StateIntegrityProtocol(threshold=0.35)
+sip = StateIntegrityProtocol(threshold=threshold)
 
 # =========================
 # 7. OUTPUT
@@ -86,14 +103,15 @@ if run_btn and intent and logs:
 
     try:
         sip.anchor(intent)
-        drifts = [sip.observe(s).drift for s in steps]
 
-        avg_drift = np.mean(drifts)
-        peak_drift = max(drifts)
+        results = [sip.observe(s) for s in steps]
+        drifts = [r.drift for r in results]
 
-        # simple cost model
-        cost_per_run = 0.03
-        monthly_cost = (avg_drift * 100 * cost_per_run) * runs
+        avg_drift = float(np.mean(drifts)) if drifts else 0.0
+        peak_drift = float(max(drifts)) if drifts else 0.0
+
+        # Demo/toy cost model: avg_drift (0..1) represents "waste fraction"
+        monthly_cost = avg_drift * cost_per_run * runs
 
         # =========================
         # RESULTS
@@ -103,27 +121,28 @@ if run_btn and intent and logs:
 
             col1, col2 = st.columns(2)
 
-            col1.metric("Goal Drift", f"{round(avg_drift * 100, 1)}%")
+            col1.metric("Avg Goal Drift", f"{avg_drift * 100:.1f}%")
 
-            col2.metric("Peak Drift", f"{round(peak_drift, 2)}")
+            col2.metric("Peak Drift", f"{peak_drift * 100:.1f}%")
 
-            # STATUS LOGIC
-            if avg_drift < 0.20:
+            # STATUS LOGIC — aligned with SIP threshold
+            # Warning zone spans threshold..1.5×threshold; above that is critical
+            if avg_drift <= threshold:
                 status = "✅ Healthy"
-                msg = "Your AI is aligned and efficient."
-            elif avg_drift < 0.40:
+                msg = "Your AI is aligned (avg drift is within the threshold)."
+            elif avg_drift <= min(1.0, threshold * 1.5):
                 status = "⚠️ Warning"
-                msg = "Your AI is drifting from its goal."
+                msg = "Your AI is drifting beyond the threshold. Consider adding guardrails or re-alignment."
             else:
                 status = "🚨 Critical"
-                msg = "Severe goal loss detected. High inefficiency."
+                msg = "High drift detected. Strong risk of intent loss and wasted compute."
 
             st.subheader(status)
 
             st.metric(
-                "Estimated Monthly Cost Loss",
-                f"${round(monthly_cost, 2)}",
-                delta="Hidden AI Waste",
+                "Estimated Monthly Cost Loss (demo)",
+                f"${monthly_cost:.2f}",
+                delta="Toy model",
             )
 
             st.info(msg)
@@ -132,7 +151,11 @@ if run_btn and intent and logs:
             # CHART
             # =========================
             df = pd.DataFrame(
-                {"Step": range(1, len(drifts) + 1), "Drift Score": drifts}
+                {
+                    "Step": [r.step for r in results],
+                    "Drift Score": [r.drift for r in results],
+                    "Aligned": [r.is_aligned for r in results],
+                }
             )
 
             fig = px.line(
@@ -142,8 +165,12 @@ if run_btn and intent and logs:
                 title="AI Goal Drift Over Time",
                 markers=True,
             )
+            fig.add_hline(y=threshold, line_dash="dash", annotation_text="Threshold")
 
             st.plotly_chart(fig, use_container_width=True)
+
+            with st.expander("Show step-by-step details"):
+                st.dataframe(df, use_container_width=True)
 
     except Exception as e:
         st.error(f"Error: {e}")
