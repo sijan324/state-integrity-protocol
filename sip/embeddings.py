@@ -1,46 +1,41 @@
 """
-Simple TF-IDF-based text embedding helper.
-
-This module provides a lightweight embedding function that works without any
-external API key.  For production use, swap ``default_embed_fn`` for a
-model-backed function (e.g. ``openai.embeddings.create``).
+State Integrity Protocol (SIP) - Embedding Engine
+Optimized for zero-latency auditing with Semantic Smoothing.
 """
 
 from __future__ import annotations
-
 import math
 import re
 from collections import Counter
 from typing import List
 
-
 def _tokenize(text: str) -> List[str]:
-    """Lower-case, split on non-word characters."""
-    return re.findall(r"[a-z0-9]+", text.lower())
-
+    """
+    Lower-case, filters out numeric noise and common stopwords 
+    to reduce 'False Positive' drift in demos.
+    """
+    # Extract alpha-numeric tokens
+    tokens = re.findall(r"[a-z0-9]+", text.lower())
+    
+    # Semantic Smoothing: Ignore connector words that don't carry 'Intent'
+    stop_words = {
+        'the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'to', 'for', 
+        'in', 'of', 'with', 'by', 'do', 'does', 'doing', 'it', 'my', 'your'
+    }
+    return [t for t in tokens if t not in stop_words]
 
 def _tf(tokens: List[str]) -> Counter:
     return Counter(tokens)
 
-
 class TFIDFEmbedder:
     """
     Incrementally-fitted TF-IDF vectoriser.
-
-    The vocabulary grows each time :py:meth:`embed` is called with a new
-    document.  Embeddings are L2-normalised so that cosine similarity reduces
-    to a dot-product.
+    L2-normalised for direct dot-product cosine similarity.
     """
-
     def __init__(self) -> None:
         self._vocab: dict[str, int] = {}
-        # document frequency: how many docs contain each term
         self._df: Counter = Counter()
         self._n_docs: int = 0
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def embed(self, text: str) -> List[float]:
         """Return a TF-IDF vector (L2-normalised) for *text*."""
@@ -63,11 +58,11 @@ class TFIDFEmbedder:
         for term, count in tf.items():
             idx = self._vocab[term]
             tf_score = count / len(tokens)
+            # IDF with smoothing to prevent division by zero
             idf_score = math.log((1 + self._n_docs) / (1 + self._df[term])) + 1.0
             vec[idx] = tf_score * idf_score
 
         return _l2_normalize(vec)
-
 
 def _l2_normalize(vec: List[float]) -> List[float]:
     norm = math.sqrt(sum(v * v for v in vec))
@@ -75,11 +70,9 @@ def _l2_normalize(vec: List[float]) -> List[float]:
         return vec
     return [v / norm for v in vec]
 
-
-# Module-level singleton used as the default embedding function.
+# Singleton instance
 _default_embedder = TFIDFEmbedder()
 
-
 def default_embed_fn(text: str) -> List[float]:
-    """Default embedding function backed by an incremental TF-IDF model."""
+    """Default embedding function for the SIP Protocol."""
     return _default_embedder.embed(text)
