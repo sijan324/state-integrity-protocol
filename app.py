@@ -77,7 +77,7 @@ if run_demo:
 # --- CTA ---
 st.divider()
 st.markdown("### 🚀 Need full enterprise audit & reports?")
-st.markdown("📩 Contact: your@email.com")
+st.markdown("📩 Contact: sijangautamx@gmail.com")
 
 # --- FOOTER ---
 st.markdown("---")
