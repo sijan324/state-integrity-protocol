@@ -4,115 +4,91 @@ import numpy as np
 import plotly.express as px
 from sip.protocol import StateIntegrityProtocol
 
-# --- 1. Page Configuration ---
-st.set_page_config(page_title="State Flow Lens | Fidelity Intelligence", layout="wide")
+# --- 1. Page Config ---
+st.set_page_config(page_title="State Flow Lens", layout="wide")
 
-# Custom Professional Styling
+# Custom UI for 2-Second Understanding
 st.markdown(
     """
     <style>
-    .main { background-color: #0e1117; color: #ffffff; }
-    .stMetric { background-color: #1f2937; padding: 15px; border-radius: 10px; border: 1px solid #374151; }
-    .stButton>button { border-radius: 5px; height: 3em; background-color: #2563eb; color: white; }
+    .main { background-color: #0e1117; color: white; }
+    .stMetric { background-color: #1f2937; padding: 20px; border-radius: 15px; border-left: 10px solid #2563eb; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# --- 2. Sidebar: Strategic Controls ---
-st.sidebar.header("🛡️ Audit Configuration")
-threshold = st.sidebar.slider("Tolerance Threshold", 0.0, 1.0, 0.35)
-cost_per_token = st.sidebar.number_input(
-    "Avg. Cost per 1k Tokens ($)", value=0.03, step=0.01
-)
+st.title("🧬 State Flow Lens")
+st.subheader("Is your AI wasting your money? Find out in seconds.")
 
-st.sidebar.divider()
-st.sidebar.subheader("📈 Revenue Protection (ROI)")
-runs_per_month = st.sidebar.number_input(
-    "Monthly Workflow Volume", value=1000, step=100
-)
+col_in, col_out = st.columns([1, 1.5])
 
-# Initialize Protocol
-sip = StateIntegrityProtocol(threshold=threshold)
-
-# --- 3. Main UI Layout ---
-st.title("🧬 State Flow Lens: Fidelity Intelligence")
-st.caption(
-    "Quantifying Semantic Entropy and Compute Leakage in Multi-Agent AI Pipelines."
-)
-
-col1, col2 = st.columns([1, 1.5])
-
-with col1:
-    st.subheader("📥 Diagnostic Input")
-    initial_intent = st.text_input(
-        "System Anchor (Original Intent)", placeholder="e.g., Audit Q3 revenue..."
+with col_in:
+    st.write("### 📥 1. Paste your AI Logs")
+    intent = st.text_input(
+        "What was the AI supposed to do?", value="Analyze Q3 Financials"
     )
-    raw_steps = st.text_area("Agent Transition Logs (One per line)", height=320)
-    run_audit = st.button("🚀 Run Fidelity Audit", use_container_width=True)
+    logs = st.text_area(
+        "What did the AI actually say? (One line per step)",
+        height=250,
+        value="Step 1: Extracting revenue\nStep 2: Checking pizza prices\nStep 3: Comparing crust types",
+    )
+    runs = st.number_input("How many times does this run per month?", value=1000)
+    audit_btn = st.button("🚀 Check for Money Leakage", use_container_width=True)
 
-# --- 4. Monitoring & Analytics Engine ---
-if run_audit and raw_steps and initial_intent:
-    steps = [s.strip() for s in raw_steps.split("\n") if s.strip()]
+# --- 2. Simple Logic ---
+sip = StateIntegrityProtocol(threshold=0.35)
 
-    if not steps:
-        st.error("Please enter at least one agent transition log.")
-    else:
-        try:
-            sip.anchor(initial_intent)
-            results = [sip.observe(s) for s in steps]
-            drifts = [r.drift for r in results]
+if audit_btn and logs and intent:
+    steps = [s.strip() for s in logs.split("\n") if s.strip()]
+    sip.anchor(intent)
+    drifts = [sip.observe(s).drift for s in steps]
+    avg_drift = np.mean(drifts)
 
-            # Analytics Calculations
-            avg_drift = np.mean(drifts)
-            peak_drift = max(drifts)
-            loss_per_run = (avg_drift * 100) * cost_per_token
-            total_monthly_waste = loss_per_run * runs_per_month
+    # Simple Money Calculation ($0.03 is the industry avg)
+    monthly_waste = (avg_drift * 100 * 0.03) * runs
 
-            with col2:
-                st.subheader("📊 Integrity Report")
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Avg. Intent Decay", f"{round(avg_drift * 100, 1)}%")
-                m2.metric("Peak Semantic Drift", f"{round(peak_drift, 2)}")
-                m3.metric(
-                    "Projected Monthly Waste",
-                    f"${round(total_monthly_waste, 2)}",
-                    delta="Leakage Detected",
-                    delta_color="inverse",
-                )
+    with col_out:
+        st.write("### 📊 2. Your Results")
 
-                # Visual Entropy Mapping - FIXED COLUMN NAMES
-                df = pd.DataFrame(
-                    {
-                        "Step": range(1, len(drifts) + 1),
-                        "Fidelity Loss": drifts,
-                        "Status": [
-                            "Safe" if d <= threshold else "Critical Breach"
-                            for d in drifts
-                        ],
-                    }
-                )
+        # Big Visual Metrics
+        m1, m2 = st.columns(2)
 
-                # Using 'Fidelity Loss' to match the DataFrame exactly
-                fig = px.area(
-                    df,
-                    x="Step",
-                    y="Fidelity Loss",
-                    color="Status",
-                    title="Semantic Entropy Mapping",
-                    color_discrete_map={
-                        "Safe": "#10b981",
-                        "Critical Breach": "#ef4444",
-                    },
-                    template="plotly_dark",
-                )
-                st.plotly_chart(fig, use_container_width=True)
+        # Color coding the result
+        if avg_drift < 0.20:
+            status = "✅ HEALTHY"
+            color = "inverse"
+            msg = "Your AI is on track. Efficiency is high."
+        elif avg_drift < 0.40:
+            status = "⚠️ WARNING"
+            color = "off"
+            msg = "Your AI is starting to drift. You are losing money."
+        else:
+            status = "🚨 CRITICAL"
+            color = "normal"
+            msg = "Your AI has failed. Most of this compute is wasted."
 
-            st.sidebar.success(
-                f"Audit Finalized: ${round(total_monthly_waste, 2)} monthly loss identified."
-            )
+        m1.metric("System Health", status)
+        m2.metric(
+            "Monthly Money Leakage",
+            f"${round(monthly_waste, 2)}",
+            delta="Waste",
+            delta_color=color,
+        )
 
-        except Exception as e:
-            st.error(f"Audit Engine Error: {e}")
+        # Simple Graph
+        df = pd.DataFrame({"Step": range(1, len(drifts) + 1), "WasteLevel": drifts})
+        fig = px.bar(
+            df,
+            x="Step",
+            y="WasteLevel",
+            title="Where is the money leaking?",
+            color="WasteLevel",
+            color_continuous_scale=["green", "yellow", "red"],
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-st.sidebar.info("State Flow Lens v1.2.2 | Infrastructure Verification Layer")
+        st.info(msg)
+
+st.divider()
+st.write("📩 **Want to stop the leak?** Contact: sijangautamx@gmail.com")
