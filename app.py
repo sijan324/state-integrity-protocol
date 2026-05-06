@@ -4,79 +4,114 @@ import numpy as np
 import plotly.express as px
 from sip.protocol import StateIntegrityProtocol
 
-st.set_page_config(page_title="State Flow Lens", layout="wide")
+# --- 1. Page Configuration ---
+st.set_page_config(page_title="State Flow Lens | Fidelity Intelligence", layout="wide")
 
-st.title("🧬 State Flow Lens")
-st.markdown("Real-time detection of intent loss in AI workflows.")
-
-# --- INPUT ---
-initial_intent = st.text_input(
-    "System Anchor", value="Summarize Q3 earnings call into key bullet points"
+# Custom Professional Styling
+st.markdown(
+    """
+    <style>
+    .main { background-color: #0e1117; color: #ffffff; }
+    .stMetric { background-color: #1f2937; padding: 15px; border-radius: 10px; border: 1px solid #374151; }
+    .stButton>button { border-radius: 5px; height: 3em; background-color: #2563eb; color: white; }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
-raw_steps = st.text_area(
-    "Agent Steps",
-    value="""Extract revenue data
-Analyze CEO commentary
-Summarize key financial highlights
-Generate final bullet points""",
+# --- 2. Sidebar: Strategic Controls ---
+st.sidebar.header("🛡️ Audit Configuration")
+threshold = st.sidebar.slider("Tolerance Threshold", 0.0, 1.0, 0.35)
+cost_per_token = st.sidebar.number_input(
+    "Avg. Cost per 1k Tokens ($)", value=0.03, step=0.01
 )
 
-run = st.button("🚀 Run Analysis", use_container_width=True)
+st.sidebar.divider()
+st.sidebar.subheader("📈 Revenue Protection (ROI)")
+runs_per_month = st.sidebar.number_input(
+    "Monthly Workflow Volume", value=1000, step=100
+)
 
-# --- ADVANCED TOGGLE ---
-advanced = st.checkbox("🔓 Show Advanced Analytics")
+# Initialize Protocol
+sip = StateIntegrityProtocol(threshold=threshold)
 
-sip = StateIntegrityProtocol(threshold=0.35)
+# --- 3. Main UI Layout ---
+st.title("🧬 State Flow Lens: Fidelity Intelligence")
+st.caption(
+    "Quantifying Semantic Entropy and Compute Leakage in Multi-Agent AI Pipelines."
+)
 
-if run:
+col1, col2 = st.columns([1, 1.5])
+
+with col1:
+    st.subheader("📥 Diagnostic Input")
+    initial_intent = st.text_input(
+        "System Anchor (Original Intent)", placeholder="e.g., Audit Q3 revenue..."
+    )
+    raw_steps = st.text_area("Agent Transition Logs (One per line)", height=320)
+    run_audit = st.button("🚀 Run Fidelity Audit", use_container_width=True)
+
+# --- 4. Monitoring & Analytics Engine ---
+if run_audit and raw_steps and initial_intent:
     steps = [s.strip() for s in raw_steps.split("\n") if s.strip()]
 
-    sip.anchor(initial_intent)
-    results = [sip.observe(s) for s in steps]
-    drifts = [r.drift for r in results]
-
-    avg_drift = np.mean(drifts)
-    peak_drift = max(drifts)
-
-    st.subheader("📊 Core Insights")
-
-    col1, col2 = st.columns(2)
-    col1.metric("Avg Intent Loss", f"{round(avg_drift * 100, 1)}%")
-    col2.metric("Peak Drift", f"{round(peak_drift, 2)}")
-
-    # Graph
-    df = pd.DataFrame({"Step": range(1, len(drifts) + 1), "Loss": drifts})
-    fig = px.area(
-        df, x="Step", y="Loss", title="Intent Drift Over Time", template="plotly_dark"
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Simple insight
-    if avg_drift > 0.35:
-        st.warning("⚠️ High intent decay detected. System may be misaligned.")
+    if not steps:
+        st.error("Please enter at least one agent transition log.")
     else:
-        st.success("✅ System alignment is stable.")
+        try:
+            sip.anchor(initial_intent)
+            results = [sip.observe(s) for s in steps]
+            drifts = [r.drift for r in results]
 
-    # --- ADVANCED SECTION ---
-    if advanced:
-        st.divider()
-        st.subheader("💰 Advanced Analytics")
+            # Analytics Calculations
+            avg_drift = np.mean(drifts)
+            peak_drift = max(drifts)
+            loss_per_run = (avg_drift * 100) * cost_per_token
+            total_monthly_waste = loss_per_run * runs_per_month
 
-        cost_per_token = st.number_input("Cost per 1k tokens ($)", value=0.03)
-        runs_per_month = st.number_input("Monthly runs", value=1000)
+            with col2:
+                st.subheader("📊 Integrity Report")
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Avg. Intent Decay", f"{round(avg_drift * 100, 1)}%")
+                m2.metric("Peak Semantic Drift", f"{round(peak_drift, 2)}")
+                m3.metric(
+                    "Projected Monthly Waste",
+                    f"${round(total_monthly_waste, 2)}",
+                    delta="Leakage Detected",
+                    delta_color="inverse",
+                )
 
-        monthly_waste = ((avg_drift * 100) * cost_per_token) * runs_per_month
+                # Visual Entropy Mapping
+                df = pd.DataFrame(
+                    {
+                        "Step": range(1, len(drifts) + 1),
+                        "Fidelity Loss": drifts,
+                        "Status": [
+                            "Safe" if d <= threshold else "Critical Breach"
+                            for d in drifts
+                        ],
+                    }
+                )
 
-        col3, col4 = st.columns(2)
-        col3.metric("Estimated Monthly Waste", f"${round(monthly_waste, 2)}")
-        col4.metric("Efficiency Score", f"{round((1 - avg_drift) * 100, 1)}%")
+                fig = px.area(
+                    df,
+                    x="Step",
+                    y="Loss",
+                    color="Status",
+                    title="Semantic Entropy Mapping",
+                    color_discrete_map={
+                        "Safe": "#10b981",
+                        "Critical Breach": "#ef4444",
+                    },
+                    template="plotly_dark",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
-        st.info("💡 Higher drift directly increases operational cost in AI systems.")
+            st.sidebar.success(
+                f"Audit Finalized: ${round(total_monthly_waste, 2)} monthly loss identified."
+            )
 
-# --- CTA ---
-st.divider()
-st.markdown("### 🚀 Need full enterprise audit & reporting?")
-st.markdown("📩 Contact: sijangautamx@gmail.com")
+        except Exception as e:
+            st.error(f"Audit Engine Error: {e}")
 
-st.caption("State Flow Lens | Open Core Demo")
+st.sidebar.info("State Flow Lens v1.2.1 | Infrastructure Verification Layer")
