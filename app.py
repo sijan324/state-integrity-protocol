@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from sip import StateIntegrityProtocol
+from sip import StateIntegrityProtocol, SIPGuard
 
 # =========================
 # 1. PAGE CONFIG
@@ -94,6 +94,7 @@ Generate summary report""",
 # 6. ENGINE
 # =========================
 sip = StateIntegrityProtocol(threshold=threshold)
+guard = SIPGuard(threshold=threshold, mode="realign")
 
 # =========================
 # 7. OUTPUT
@@ -103,9 +104,11 @@ if run_btn and intent and logs:
 
     try:
         sip.anchor(intent)
+        guard.anchor(intent)
 
         results = [sip.observe(s) for s in steps]
         drifts = [r.drift for r in results]
+        decisions = [guard.check(s) for s in steps]
 
         avg_drift = float(np.mean(drifts)) if drifts else 0.0
         peak_drift = float(max(drifts)) if drifts else 0.0
@@ -171,6 +174,21 @@ if run_btn and intent and logs:
 
             with st.expander("Show step-by-step details"):
                 st.dataframe(df, use_container_width=True)
+
+            # =========================
+            # GATEKEEPER DECISIONS
+            # =========================
+            st.subheader("🛡️ Gatekeeper Decision")
+            for i, decision in enumerate(decisions):
+                if decision["action"] == "REALIGN":
+                    st.error(f"Step {i + 1}: 💉 REALIGN TRIGGERED")
+                    st.json(decision["payload"])
+                elif decision["action"] == "BLOCK":
+                    st.error(f"Step {i + 1}: 🚫 BLOCKED (drift {decision['drift']:.4f})")
+                elif decision["action"] == "WARN":
+                    st.warning(f"Step {i + 1}: ⚠️ WARNING (drift {decision['drift']:.4f})")
+                else:
+                    st.success(f"Step {i + 1}: ✅ ALLOWED")
 
     except Exception as e:
         st.error(f"Error: {e}")
