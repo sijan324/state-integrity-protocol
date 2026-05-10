@@ -1,6 +1,6 @@
 # State Integrity Protocol (SIP) 🧬
 
-[![SIP Test Suite](https://github.com)](https://github.com)
+[![SIP Test Suite](https://github.com)](https://github.com/sijan324/state-integrity-protocol/actions)
 ![License: AGPL-3.0](shields.io)
 ![Python: 3.10+](shields.io)
 
