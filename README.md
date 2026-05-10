@@ -38,7 +38,7 @@ SIP uses a mathematical **Semantic Anchor** to monitor the *Internal State* of t
 ## 💼 SIP Enterprise Cloud (Paid Features)
 
 For enterprise-scale reliability monitoring, contact the author via email:
-📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@://gmail.com)**
+📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@gmail.com)**
 
 ---
 
