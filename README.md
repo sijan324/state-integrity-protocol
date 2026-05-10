@@ -1,8 +1,9 @@
+
 # State Integrity Protocol (SIP) 🧬
 
-[![SIP Test Suite](https://github.com)](https://github.com/sijan324/state-integrity-protocol/actions)
-![License: AGPL-3.0](shields.io)
-![Python: 3.10+](shields.io)
+[![SIP Test Suite](https://github.com/sijan324/state-integrity-protocol/actions/workflows/test.yml/badge.svg)](https://github.com/sijan324/state-integrity-protocol/actions)
+![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)
+![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 
 A specialized enterprise auditing protocol to detect and measure **State Decay** (information fidelity loss) in multi-agent AI pipelines and complex LLM chains.
 
@@ -38,7 +39,7 @@ SIP uses a mathematical **Semantic Anchor** to monitor the *Internal State* of t
 ## 💼 SIP Enterprise Cloud (Paid Features)
 
 For enterprise-scale reliability monitoring, contact the author via email:
-📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@://gmail.com)**
+📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@gmail.com)**
 
 ---
 
@@ -68,7 +69,6 @@ print(f"Drift: {result.drift:.4f} | Aligned: {result.is_aligned}")
 
 ## 📊 API Technical Reference
 
-
 | Method / Property | Description |
 |---|---|
 | `anchor(prompt)` | Instantiates the foundational semantic vector truth |
@@ -91,4 +91,6 @@ pytest tests/ -v
 
 ## ⚖️ License
 This project is protected under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-****
+```
+
+**Just copy the entire block above and paste it into your README.md file. Then commit and push. Done.**
