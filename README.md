@@ -12,7 +12,7 @@ A specialized enterprise auditing protocol to detect and measure **State Decay**
 ## ⚡ The Live Demo
 
 Test your own multi-agent logs live on our cloud dashboard:  
-👉 **[State Flow Lens Interactive App](https://streamlit.app)**
+👉 **[State Flow Lens Interactive App](https://state-integrity-protocol-iwxuqugbbhnlsmz655r2kz.streamlit.app/)**
 
 ---
 
