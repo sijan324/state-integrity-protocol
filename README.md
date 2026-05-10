@@ -1,8 +1,8 @@
 # State Integrity Protocol (SIP) 🧬
 
-[![SIP Test Suite] https://github.com/sijan324/state-integrity-protocol
-![License: AGPL-3.0](https://shields.io)
-![Python: 3.10+](https://shields.io)
+[![SIP Test Suite](https://github.com)](https://github.com)
+![License: AGPL-3.0](shields.io)
+![Python: 3.10+](shields.io)
 
 A specialized enterprise auditing protocol to detect and measure **State Decay** (information fidelity loss) in multi-agent AI pipelines and complex LLM chains.
 
@@ -11,7 +11,7 @@ A specialized enterprise auditing protocol to detect and measure **State Decay**
 ## ⚡ The Live Demo
 
 Test your own multi-agent logs live on our cloud dashboard:  
-👉 **[State Flow Lens Interactive App](https://state-integrity-protocol-iwxuqugbbhnlsmz655r2kz.streamlit.app/)**
+👉 **[State Flow Lens Interactive App](https://streamlit.app)**
 
 ---
 
@@ -38,7 +38,7 @@ SIP uses a mathematical **Semantic Anchor** to monitor the *Internal State* of t
 ## 💼 SIP Enterprise Cloud (Paid Features)
 
 For enterprise-scale reliability monitoring, contact the author via email:
-📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@gmail.com)**
+📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@://gmail.com)**
 
 ---
 
@@ -91,3 +91,4 @@ pytest tests/ -v
 
 ## ⚖️ License
 This project is protected under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+****
