@@ -41,10 +41,10 @@ st.markdown(
 # 3. HEADER
 # =========================
 st.title("🧬 State Flow Lens")
-st.subheader("Is your AI losing focus—and costing you money? Find out in seconds.")
+st.subheader("Catch when your AI workflow drifts off task before it creates rework.")
 
 st.markdown(
-    "💡 Paste your AI workflow and instantly detect where it drifts from the original goal."
+    "💡 Paste your AI workflow and see where it stops following the original goal."
 )
 
 # =========================
@@ -153,7 +153,7 @@ if run_btn and intent and logs:
 # =========================
 st.divider()
 
-st.markdown("### 💡 Stop AI waste before it scales.")
+st.markdown("### 💡 Stop off-task AI runs before they turn into review debt.")
 
 st.markdown("📩 Contact: sijangautamx@gmail.com")
 
