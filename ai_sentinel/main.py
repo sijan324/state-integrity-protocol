@@ -30,7 +30,7 @@ app = FastAPI(
 class AuditRequest(BaseModel):
     user_query: str
     ai_response: str
-    context: Optional[str] = ""
+    context: Optional[str] = None
 
 
 class AuditResponse(BaseModel):
@@ -61,7 +61,7 @@ def audit(request: AuditRequest):
     verdict = evaluate(
         user_query=request.user_query,
         ai_response=request.ai_response,
-        context=request.context or "",
+        context=request.context if request.context is not None else "",
     )
 
     alert_sent = False
