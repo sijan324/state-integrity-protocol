@@ -1,6 +1,8 @@
 # AI Sentinel
 
-A FastAPI service that audits AI-generated responses for hallucinations, factual inconsistencies, and unsafe content. When a problem is detected it fires a Slack alert.
+A FastAPI service that audits AI-generated responses for hallucinations, factual inconsistencies, and unsafe content. When a problem is detected it fires a Slack alert. A Streamlit dashboard provides a browser UI on top of the same API.
+
+> **Vision:** Make AI outputs auditable and observable — one response at a time.
 
 ## Files
 
@@ -9,6 +11,7 @@ ai_sentinel/
 ├── main.py          # FastAPI app  —  GET / and POST /audit
 ├── detector.py      # Evaluator    —  Groq Llama 3 or rule-based fallback
 ├── slack.py         # Slack alert  —  Incoming Webhook dispatcher
+├── app.py           # Streamlit dashboard
 ├── requirements.txt
 └── README.md
 ```
@@ -35,10 +38,19 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ## Run
 
+**Backend**
+
 ```bash
 uvicorn main:app --reload
 # → http://127.0.0.1:8000
 # → http://127.0.0.1:8000/docs  (interactive API docs)
+```
+
+**Streamlit dashboard** (in a second terminal)
+
+```bash
+streamlit run app.py
+# → http://localhost:8501
 ```
 
 ## Usage
@@ -91,6 +103,15 @@ curl -X POST http://127.0.0.1:8000/audit \
 ```json
 {"status": "ok", "service": "AI Sentinel"}
 ```
+
+## Streamlit dashboard
+
+Open `http://localhost:8501` after starting the backend and the dashboard.
+
+- Enter **User Query**, **AI Response**, and (optionally) **Context**
+- Click **Run Audit**
+- Result is shown in green (PASS) or red (FAIL)
+- If a Slack alert was sent, a notification appears below the verdict
 
 ## How evaluation works
 
