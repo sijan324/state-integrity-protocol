@@ -11,8 +11,6 @@ import os
 
 import requests
 
-SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
-
 
 def send_alert(user_query: str, ai_response: str) -> None:
     """
@@ -20,7 +18,7 @@ def send_alert(user_query: str, ai_response: str) -> None:
 
     Does nothing (with a console warning) when SLACK_WEBHOOK_URL is not set.
     """
-    webhook_url = os.getenv("SLACK_WEBHOOK_URL", SLACK_WEBHOOK_URL)
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL", "")
     if not webhook_url:
         print(
             "[AI Sentinel] SLACK_WEBHOOK_URL not set – skipping Slack alert.\n"
