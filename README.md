@@ -31,6 +31,8 @@ result = sip.observe("Refunds are only available within 7 days")
 print(result.is_aligned, result.last_drift)
 ```
 
+`result.last_drift` is provided as the latest drift-score alias on `ObservationResult` (`result.drift` is also available).
+
 ## Exposed SDK types
 
 - `StateIntegrityProtocol`
