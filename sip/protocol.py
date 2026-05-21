@@ -46,6 +46,11 @@ class ObservationResult:
         """``True`` if drift is within the acceptable threshold."""
         return self.drift <= self.threshold
 
+    @property
+    def last_drift(self) -> float:
+        """Alias for the latest drift score on this observation."""
+        return self.drift
+
 
 class StateIntegrityProtocol:
     """

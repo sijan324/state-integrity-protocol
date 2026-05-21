@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "state-integrity-protocol"
 version = "0.1.0"
-description = "Catch AI workflow drift before it creates bad outputs, rework, and wasted spend."
+description = "Minimal Python SDK for semantic drift detection and state integrity tracking."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "AGPL-3.0" }
@@ -13,6 +13,9 @@ keywords = ["ai", "agents", "drift-detection", "semantic-anchor", "llm"]
 dependencies = [
     "numpy>=1.24.0",
 ]
+
+[tool.setuptools]
+packages = ["sip"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "scikit-learn>=1.2.0"]
