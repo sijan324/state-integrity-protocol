@@ -41,10 +41,10 @@ st.markdown(
 # 3. HEADER
 # =========================
 st.title("🧬 State Flow Lens")
-st.subheader("Is your AI losing focus—and costing you money? Find out in seconds.")
+st.subheader("Catch off-task production AI runs before they turn into review debt.")
 
 st.markdown(
-    "💡 Paste your AI workflow and instantly detect where it drifts from the original goal."
+    "💡 Paste a production agent run and see where it stops following the original goal."
 )
 
 # =========================
@@ -58,20 +58,23 @@ col_in, col_out = st.columns([1, 1.5])
 with col_in:
     st.write("### 📥 Input")
 
-    intent = st.text_input("Original Goal", value="Analyze Q3 Financials")
-
-    logs = st.text_area(
-        "AI Steps (one per line)",
-        height=250,
-        value="""Extract revenue data
-Analyze performance trends
-Compare year-over-year growth
-Generate summary report""",
+    intent = st.text_input(
+        "Original Goal",
+        value="Resolve a customer billing issue and prepare a correct reply",
     )
 
-    runs = st.number_input("Monthly Runs", value=1000, step=100)
+    logs = st.text_area(
+        "Agent Steps (one per line)",
+        height=250,
+        value="""Read the customer complaint
+Check the account history
+Confirm the invoice mismatch
+Draft the customer response""",
+    )
 
-    run_btn = st.button("🚀 Analyze AI Drift", use_container_width=True)
+    runs = st.number_input("Monthly Agent Runs", value=1000, step=100)
+
+    run_btn = st.button("🚀 Analyze Agent Drift", use_container_width=True)
 
 # =========================
 # 6. ENGINE
@@ -110,20 +113,20 @@ if run_btn and intent and logs:
             # STATUS LOGIC
             if avg_drift < 0.20:
                 status = "✅ Healthy"
-                msg = "Your AI is aligned and efficient."
+                msg = "This run stays close to the original task."
             elif avg_drift < 0.40:
                 status = "⚠️ Warning"
-                msg = "Your AI is drifting from its goal."
+                msg = "This run is starting to drift from the original task."
             else:
                 status = "🚨 Critical"
-                msg = "Severe goal loss detected. High inefficiency."
+                msg = "This run has gone off-task and likely needs review."
 
             st.subheader(status)
 
             st.metric(
-                "Estimated Monthly Cost Loss",
+                "Estimated Monthly Review Waste",
                 f"${round(monthly_cost, 2)}",
-                delta="Hidden AI Waste",
+                delta="Off-task run cost",
             )
 
             st.info(msg)
@@ -139,7 +142,7 @@ if run_btn and intent and logs:
                 df,
                 x="Step",
                 y="Drift Score",
-                title="AI Goal Drift Over Time",
+                title="Agent Goal Drift Over Time",
                 markers=True,
             )
 
@@ -153,8 +156,8 @@ if run_btn and intent and logs:
 # =========================
 st.divider()
 
-st.markdown("### 💡 Stop AI waste before it scales.")
+st.markdown("### 💡 Built for teams running production AI agents with real review pressure.")
 
 st.markdown("📩 Contact: sijangautamx@gmail.com")
 
-st.caption("State Flow Lens | AI Drift Intelligence System")
+st.caption("State Flow Lens | Drift detection for production AI agents")

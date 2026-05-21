@@ -1,95 +1,109 @@
-
 # State Integrity Protocol (SIP) 🧬
 
 [![SIP Test Suite](https://github.com/sijan324/state-integrity-protocol/actions/workflows/test.yml/badge.svg)](https://github.com/sijan324/state-integrity-protocol/actions)
 ![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)
 ![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 
-A specialized enterprise auditing protocol to detect and measure **State Decay** (information fidelity loss) in multi-agent AI pipelines and complex LLM chains.
+State Integrity Protocol helps teams running production AI agents catch when a workflow drifts away from the original task before it creates rework, bad outputs, and wasted spend.
 
----
+## The one pain this product solves
 
-## ⚡ The Live Demo
+Production AI agents often start with the right goal and quietly end somewhere else.
 
-Test your own multi-agent logs live on our cloud dashboard:  
+That drift shows up as:
+
+- wrong summaries
+- off-task tool calls
+- extra review time
+- wasted model spend
+
+SIP gives you a simple way to anchor the original intent, measure drift at each step, and trigger intervention when the workflow is no longer aligned.
+
+## Who this is for right now
+
+SIP is intentionally narrow.
+
+Right now it is built for:
+
+- teams shipping production AI agents
+- workflows where a bad off-task run creates review debt or wasted spend
+- operators who need a simple drift signal before adding heavier observability stacks
+
+## The narrow wedge
+
+One ICP: teams operating production AI agents.
+
+One use case: detect off-task agent runs before they create expensive cleanup work.
+
+One promise: show where a run started drifting so a team can stop it, reroute it, or review it faster.
+
+## What SIP does
+
+1. **Anchor the goal** with the original prompt or task.
+2. **Observe each downstream step** in the workflow.
+3. **Measure semantic drift** against the anchor.
+4. **Warn or trigger a callback** when drift crosses your threshold.
+
+## Why this matters
+
+If you run production AI agents in a workflow where correctness matters, drift is expensive.
+
+SIP is built for teams that want to answer:
+
+- Is this agent still doing the job we asked it to do?
+- Which step started to drift?
+- When should we stop the run or route it to a human?
+
+## Pilot-ready positioning
+
+If you are testing SIP with early users, keep the motion simple:
+
+- start with one workflow that already creates manual review pain
+- anchor the task at run start
+- measure each downstream step
+- trigger review only when drift crosses a threshold
+- use the drift log to show where review time and wasted spend come from
+
+## Live demo
+
+Try the hosted demo:
 👉 **[State Flow Lens Interactive App](https://state-integrity-protocol-iwxuqugbbhnlsmz655r2kz.streamlit.app/)**
 
----
-
-## 🚨 The Problem: State Decay in AI Agents
-
-Current multi-agent architectures (LangChain, CrewAI, AutoGPT) suffer from **State Decay**, where context passes through nodes and loses structural fidelity, leading to hallucinations, wasted tokens, and systemic failure.
-
-## 🛡️ The Solution: Fidelity-Flow Observation
-
-SIP uses a mathematical **Semantic Anchor** to monitor the *Internal State* of the AI network via custom vectorized cosine distance algorithms, ensuring goal retention.
-
-### Key Capabilities
-*   **Real-Time Drift Isolation:** Instant monitoring of intent-to-output vector alignment.
-*   **Contextual Guardrails:** Programmatic logic gates that halt/realign agents to save tokens.
-*   **Token Loss Optimization:** Calculates the precise dollar exposure of unaligned model loops.
-
-### Technical Workflow
-1.  **Anchor:** Captures the vector embedding of the initial prompt objective.
-2.  **Observe:** Computes `drift = 1 − cosine_similarity` at each step.
-3.  **Trigger:** Throws errors or triggers callbacks if the delta exceeds the threshold (`default = 0.15`).
-
----
-
-## 💼 SIP Enterprise Cloud (Paid Features)
-
-For enterprise-scale reliability monitoring, contact the author via email:
-📥 **[Request an Enterprise Trial & Data Room Access](mailto:sijangautamx@gmail.com)**
-
----
-
-## ⚙️ Installation
+## Installation
 
 ```bash
 pip install -e .
 ```
 
-## 🚀 Quick Start
+## Quick start
 
 ```python
 from sip import StateIntegrityProtocol
 
-# Initialize with 15% Max Drift Allowance
 sip = StateIntegrityProtocol(threshold=0.15)
 
-# Step 1 – Set Ground Truth
 sip.anchor("Summarise the report in three bullets.")
 
-# Step 2 – Measure Semantic Decay
 result = sip.observe("Here are three bullet points from the report.")
 print(f"Drift: {result.drift:.4f} | Aligned: {result.is_aligned}")
 ```
 
----
-
-## 📊 API Technical Reference
+## API reference
 
 | Method / Property | Description |
 |---|---|
-| `anchor(prompt)` | Instantiates the foundational semantic vector truth |
-| `observe(output)` | Computes immediate mathematical cosine similarity delta |
-| `is_aligned` | Returns `True` if within threshold |
-| `last_drift` | Returns raw drift metric |
+| `anchor(prompt)` | Capture the original task intent |
+| `observe(output)` | Measure drift for a workflow step |
+| `is_aligned` | Returns `True` if the latest step is within threshold |
+| `last_drift` | Returns the latest drift score |
+| `history` | Returns the recorded transition history |
 
----
-
-## 🧪 Testing Coverage
-
-The protocol is validated via 40+ automated test conditions.
+## Testing
 
 ```bash
-pip install pytest
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
----
+## License
 
-## ⚖️ License
-This project is protected under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-```
-
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
