@@ -47,6 +47,10 @@ python -m pip install -e '.[dev]'
 python -m pytest tests/ -v
 ```
 
-## License
 
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+## Licensing & Commercial Use
+
+- Core SDK (SIP) is licensed under AGPL-3.0
+- **AI Sentinel** (the full monitoring system) is a separate commercial product and is **not open source**.
+- Companies can use the SIP SDK freely under AGPL terms.
+- For commercial hosted service, white-label, or custom enterprise version — please contact us.
