@@ -14,8 +14,13 @@ import re
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Sequence, Tuple
 
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
 from sip.anchor import SemanticAnchor
 from sip.observer import FidelityObserver
+
+_semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 Signer = Callable[[str], str]
 
@@ -76,14 +81,7 @@ class PipelineResult:
 
 
 class SIPMiddlewarePipeline:
-    """
-    High-level middleware flow on top of SIP primitives.
-
-    The low-level `StateIntegrityProtocol.anchor()` and `observe()` API remains
-    unchanged; this class provides an optional orchestration path.
-    """
-
-    DEFAULT_DRIFT_THRESHOLD: float = 0.15
+    DEFAULT_DRIFT_THRESHOLD: float = 0.7
     DEFAULT_INTENT_ALIGNMENT_THRESHOLD: float = 0.2
     DEFAULT_MAX_RETRIES: int = 2
 
@@ -98,14 +96,9 @@ class SIPMiddlewarePipeline:
         signer: Optional[Signer] = None,
     ) -> None:
         if not 0.0 <= drift_threshold <= 1.0:
-            raise ValueError(
-                f"drift_threshold must be in [0, 1], got {drift_threshold!r}"
-            )
+            raise ValueError(f"drift_threshold must be in [0, 1], got {drift_threshold!r}")
         if not 0.0 <= intent_alignment_threshold <= 1.0:
-            raise ValueError(
-                "intent_alignment_threshold must be in [0, 1], "
-                f"got {intent_alignment_threshold!r}"
-            )
+            raise ValueError(f"intent_alignment_threshold must be in [0, 1], got {intent_alignment_threshold!r}")
         if max_retries < 0:
             raise ValueError(f"max_retries must be >= 0, got {max_retries!r}")
 
@@ -142,15 +135,19 @@ class SIPMiddlewarePipeline:
             raise RuntimeError("Anchor not set. Call anchor() before evaluate().")
 
         drift = self._observer.observe(output)
-        drift_check = DriftCheckResult(
-            drift=drift,
-            threshold=self._drift_threshold,
-            passed=drift <= self._drift_threshold,
-        )
 
         intent_score = _intent_alignment_score(
             intent_tokens=self._intent_tokens, output=output
         )
+
+        numeric_safe = not _has_numeric_drift(self._intent_text, output)
+
+        drift_check = DriftCheckResult(
+            drift=drift,
+            threshold=self._drift_threshold,
+            passed=(drift <= self._drift_threshold or intent_score >= 0.7) and numeric_safe,
+        )
+
         intent_alignment = IntentAlignmentResult(
             score=intent_score,
             threshold=self._intent_alignment_threshold,
@@ -244,11 +241,18 @@ def _tokenize(text: str) -> set[str]:
 
 
 def _intent_alignment_score(intent_tokens: set[str], output: str) -> float:
-    if not intent_tokens:
-        return 1.0
-    output_tokens = _tokenize(output)
-    overlap = len(intent_tokens.intersection(output_tokens))
-    return overlap / len(intent_tokens)
+    if not output.strip():
+        return 0.0
+    intent_text = " ".join(intent_tokens)
+    e1 = _semantic_model.encode(intent_text)
+    e2 = _semantic_model.encode(output)
+    return float(np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2)))
+
+
+def _has_numeric_drift(intent: str, output: str) -> bool:
+    intent_nums = set(re.findall(r'\d+', intent))
+    output_nums = set(re.findall(r'\d+', output))
+    return intent_nums != output_nums
 
 
 def _matches_constraint_phrase(constraint: str, output_lower: str) -> bool:
@@ -262,15 +266,13 @@ def _matches_constraint_phrase(constraint: str, output_lower: str) -> bool:
 def _reason_for_code(code: str, evaluation: MiddlewareEvaluation) -> str:
     if code == "drift":
         return (
-            "Drift "
-            f"{evaluation.drift_check.drift:.4f} exceeded threshold "
+            f"Drift {evaluation.drift_check.drift:.4f} exceeded threshold "
             f"{evaluation.drift_check.threshold:.4f}."
         )
     if code == "intent_alignment":
         return (
-            "Intent alignment "
-            f"{evaluation.intent_alignment.score:.4f} fell below threshold "
-            f"{evaluation.intent_alignment.threshold:.4f}."
+            f"Intent alignment {evaluation.intent_alignment.score:.4f} fell below "
+            f"threshold {evaluation.intent_alignment.threshold:.4f}."
         )
     if code == "constraint_violation":
         violations = ", ".join(evaluation.constraint_check.violations)
