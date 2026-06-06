@@ -4,7 +4,7 @@ from datetime import datetime
 import hashlib
 import json
 
-from sip import SIPMiddlewarePipeline
+from middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
 
 # -----------------------------
