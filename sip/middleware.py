@@ -176,7 +176,7 @@ class SIPMiddlewarePipeline:
         drift_check = DriftCheckResult(
             drift=drift,
             threshold=self._drift_threshold,
-            passed=(drift <= self._drift_threshold or intent_score >= 0.7) and numeric_safe and scope_safe,
+            passed=(drift <= self._drift_threshold) and numeric_safe and scope_safe,
         )
 
         intent_alignment = IntentAlignmentResult(
