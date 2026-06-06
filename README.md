@@ -17,6 +17,7 @@ pip install -e .
 - `is_aligned` — boolean alignment signal
 - `last_drift` — latest drift score
 - `history` — full transition log
+- `SIPMiddlewarePipeline` — optional anchor → checks → verify/sign → repair loop orchestration
 
 ## Example
 
@@ -33,11 +34,52 @@ print(result.is_aligned, result.last_drift)
 
 `result.last_drift` is provided as the latest drift-score alias on `ObservationResult` (`result.drift` is also available).
 
+## Middleware + Verification Flow
+
+You can run an optional middleware flow for:
+
+1. Drift check against the anchored intent
+2. Intent-alignment check
+3. Constraint-violation check
+4. `verify_and_sign()` decision
+5. Accepted output or repair loop
+
+```python
+from sip import SIPMiddlewarePipeline
+
+pipeline = SIPMiddlewarePipeline(
+    drift_threshold=0.15,
+    intent_alignment_threshold=0.3,
+    constraints=["do not mention internal token"],
+    max_retries=2,
+)
+
+pipeline.anchor("Summarize refund policy in 3 bullet points")
+
+result = pipeline.run(
+    "Refund policy summary in 3 bullet points without internal token."
+)
+
+print(result.status)                   # accepted | repair_required | rejected
+print(result.decision.signature)       # deterministic signature over decision payload
+print(result.decision.failure_codes)   # machine-readable failure causes
+print(result.repair_instructions)      # regeneration guidance when not accepted
+```
+
+### Policy knobs
+
+- `drift_threshold`: max allowed semantic drift
+- `intent_alignment_threshold`: minimum token-overlap score with anchored intent
+- `constraints`: blocked phrases checked against output text
+- `max_retries`: max repair attempts before terminal rejection
+- `signer`: optional custom signing function for `verify_and_sign()`
+
 ## Exposed SDK types
 
 - `StateIntegrityProtocol`
 - `SemanticAnchor`
 - `ObservationResult`
+- `SIPMiddlewarePipeline`
 - transition utilities for state tracking
 
 ## Testing
