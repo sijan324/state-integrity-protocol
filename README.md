@@ -1,48 +1,168 @@
-# State Integrity Protocol (SIP)
+# 🧬 State Integrity Protocol (SIP)
 
-State Integrity Protocol is a minimal Python SDK for tracking semantic drift and state consistency in LLM workflows.
+> A lightweight runtime layer for detecting and preventing semantic drift in LLM outputs.
 
-This SDK is used by higher-level applications like AI Sentinel.
+SIP helps AI systems stay **faithful to user intent** across generation, transformation, and multi-agent workflows.
 
-## Installation
+---
 
-```bash
-pip install -e .
+## ⚠️ Problem
+
+LLMs can fail silently by:
+
+- drifting from original intent
+- adding unwanted assumptions
+- changing numbers, constraints, or meaning
+- hallucinating details that were never requested
+
+This makes AI outputs less reliable in production systems.
+
+---
+
+## 🧠 Solution
+
+SIP introduces a runtime integrity loop:
+
+**Intent → Anchor → Output → Observe → Drift Score → Decision**
+
+Every generated output is checked against the original anchored intent before it is accepted.
+
+---
+
+## ⚙️ Core Concept
+
+SIP operates in three stages:
+
+### 1) Anchor (Intent Definition)
+
+Define the original intent:
+
+```python
+sip.anchor("Refund user $50 within 7 days")
 ```
 
-## Core API
+### 2) Observe (Output Evaluation)
 
-- `anchor(prompt)` — define the initial intent state
-- `observe(output)` — evaluate drift from the anchored intent
-- `is_aligned` — boolean alignment signal
-- `last_drift` — latest drift score
-- `history` — full transition log
-- `SIPMiddlewarePipeline` — optional anchor → checks → verify/sign → repair loop orchestration
+Compare generated output against the anchor:
 
-## Example
+```python
+result = sip.observe("Refund user $500 immediately")
+```
+
+### 3) Decision Layer
+
+Use alignment and drift signals to decide accept/repair/reject:
+
+```python
+print(result.is_aligned)
+print(result.drift)
+```
+
+---
+
+## 🔁 Example
 
 ```python
 from sip import StateIntegrityProtocol
 
 sip = StateIntegrityProtocol()
 
-sip.anchor("User wants refund policy")
-result = sip.observe("Refunds are only available within 7 days")
+sip.anchor("Delete user account safely")
+result = sip.observe("Create new user account")
 
-print(result.is_aligned, result.last_drift)
+print(result.is_aligned)  # False
+print(result.drift)       # e.g., 0.61
 ```
 
-`result.last_drift` is provided as the latest drift-score alias on `ObservationResult` (`result.drift` is also available).
+`ObservationResult` also exposes `last_drift` as the latest drift-score alias.
 
-## Middleware + Verification Flow
+---
 
-You can run an optional middleware flow for:
+## 🧱 Architecture
 
-1. Drift check against the anchored intent
-2. Intent-alignment check
-3. Constraint-violation check
+SIP is designed as middleware for AI systems:
+
+```text
+User / Agent
+    ↓
+LLM (generation)
+    ↓
+SIP Middleware
+    ├── Drift detection
+    ├── Intent alignment check
+    ├── Constraint validation
+    ↓
+Decision: Accept / Repair / Reject
+```
+
+---
+
+## 🔐 What SIP Detects
+
+- semantic drift
+- numerical manipulation
+- instruction leakage
+- constraint violations
+- intent mismatch
+- prompt injection attempts
+
+---
+
+## 🚀 Why This Matters
+
+SIP makes AI systems:
+
+- more reliable
+- more predictable
+- safer for production use
+- easier to audit
+
+---
+
+## 🧩 Use Cases
+
+- AI agents
+- LLM pipelines
+- autonomous workflows
+- enterprise AI systems
+- chatbots with strict behavior controls
+
+---
+
+## 📦 Installation
+
+```bash
+pip install -e .
+```
+
+For development and tests:
+
+```bash
+python -m pip install -e '.[dev]'
+```
+
+---
+
+## 🧠 Core API
+
+- `anchor(prompt: str)` — define the initial intent state
+- `observe(output: str)` — evaluate drift from the anchored intent
+- `is_aligned: bool` — alignment signal
+- `last_drift: float` — latest drift score
+- `history: list` — transition history
+- `SIPMiddlewarePipeline` — optional anchor → checks → verify/sign → repair loop orchestration
+
+---
+
+## 🛡️ Middleware + Verification Flow
+
+The optional pipeline can run:
+
+1. drift check against the anchor
+2. intent-alignment check
+3. constraint-violation check
 4. `verify_and_sign()` decision
-5. Accepted output or repair loop
+5. accept/repair/reject routing
 
 ```python
 from sip import SIPMiddlewarePipeline
@@ -55,44 +175,45 @@ pipeline = SIPMiddlewarePipeline(
 )
 
 pipeline.anchor("Summarize refund policy in 3 bullet points")
-
 result = pipeline.run(
     "Refund policy summary in 3 bullet points without internal token."
 )
 
-print(result.status)                   # accepted | repair_required | rejected
-print(result.decision.signature)       # deterministic signature over decision payload
-print(result.decision.failure_codes)   # machine-readable failure causes
-print(result.repair_instructions)      # regeneration guidance when not accepted
+print(result.status)                 # accepted | repair_required | rejected
+print(result.decision.signature)     # deterministic decision signature
+print(result.decision.failure_codes) # machine-readable failure causes
+print(result.repair_instructions)    # guidance when not accepted
 ```
 
-### Policy knobs
+### Policy Knobs
 
-- `drift_threshold`: max allowed semantic drift
-- `intent_alignment_threshold`: minimum token-overlap score with anchored intent
-- `constraints`: blocked words/phrases checked against output text
-- `max_retries`: max repair attempts before terminal rejection
+- `drift_threshold`: maximum allowed semantic drift
+- `intent_alignment_threshold`: minimum token-overlap score
+- `constraints`: blocked words/phrases
+- `max_retries`: max repair attempts before rejection
 - `signer`: optional custom signing function for `verify_and_sign()`
 
-## Exposed SDK types
+---
 
-- `StateIntegrityProtocol`
-- `SemanticAnchor`
-- `ObservationResult`
-- `SIPMiddlewarePipeline`
-- transition utilities for state tracking
-
-## Testing
+## 🧪 Testing
 
 ```bash
-python -m pip install -e '.[dev]'
 python -m pytest tests/ -v
 ```
 
+---
+
+## 🛡️ Philosophy
+
+> “AI should not just generate outputs — it should stay faithful to intent.”
+
+SIP enforces that principle at runtime.
+
+---
 
 ## Licensing & Commercial Use
 
-- Core SDK (SIP) is licensed under AGPL-3.0
+- Core SDK (SIP) is licensed under AGPL-3.0.
 - **AI Sentinel** (the full monitoring system) is a separate commercial product and is **not open source**.
-- Companies can use the SIP SDK freely under AGPL terms.
-- For commercial hosted service, white-label, or custom enterprise version — please contact us.
+- Companies can use SIP under AGPL terms.
+- For commercial hosted service, white-label, or custom enterprise versions, please contact us.
