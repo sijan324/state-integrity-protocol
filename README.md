@@ -148,6 +148,7 @@ python -m pip install -e '.[dev]'
 - `anchor(prompt: str)` — define the initial intent state
 - `observe(output: str)` — evaluate drift from the anchored intent
 - `is_aligned: bool` — alignment signal
+- `drift: float` — latest drift score (alias)
 - `last_drift: float` — latest drift score
 - `history: list` — transition history
 - `SIPMiddlewarePipeline` — optional anchor → checks → verify/sign → repair loop orchestration
