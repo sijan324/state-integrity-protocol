@@ -8,19 +8,49 @@ Human/Agent A -> anchor(intent) -> middleware checks -> verify_and_sign()
 
 from __future__ import annotations
 
+import os
+os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
 import hashlib
 import json
+import logging
 import re
+import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
+warnings.filterwarnings("ignore")
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
+from sentence_transformers import SentenceTransformer
 from sip.anchor import SemanticAnchor
 from sip.observer import FidelityObserver
 
-_semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+# Cache embeddings to avoid recomputing
+_semantic_model: Optional[SentenceTransformer] = None
+_embedding_cache: dict[str, np.ndarray] = {}
+
+
+def _get_model() -> SentenceTransformer:
+    global _semantic_model
+    if _semantic_model is None:
+        _semantic_model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+    return _semantic_model
+
+
+def _encode_cached(text: str) -> np.ndarray:
+    if text not in _embedding_cache:
+        _embedding_cache[text] = _get_model().encode(text)
+    return _embedding_cache[text]
+
 
 Signer = Callable[[str], str]
 
@@ -126,6 +156,8 @@ class SIPMiddlewarePipeline:
         self._rejection_count = 0
         self._intent_text = intent
         self._intent_tokens = _tokenize(intent)
+        # Pre-cache intent embedding
+        _encode_cached(" ".join(self._intent_tokens))
         return self._anchor.set(intent)
 
     def evaluate(
@@ -135,17 +167,16 @@ class SIPMiddlewarePipeline:
             raise RuntimeError("Anchor not set. Call anchor() before evaluate().")
 
         drift = self._observer.observe(output)
-
         intent_score = _intent_alignment_score(
             intent_tokens=self._intent_tokens, output=output
         )
-
         numeric_safe = not _has_numeric_drift(self._intent_text, output)
+        scope_safe = not _has_scope_creep(self._intent_text, output)
 
         drift_check = DriftCheckResult(
             drift=drift,
             threshold=self._drift_threshold,
-            passed=(drift <= self._drift_threshold or intent_score >= 0.7) and numeric_safe,
+            passed=(drift <= self._drift_threshold or intent_score >= 0.7) and numeric_safe and scope_safe,
         )
 
         intent_alignment = IntentAlignmentResult(
@@ -159,8 +190,7 @@ class SIPMiddlewarePipeline:
         )
         output_lower = output.lower()
         violations = tuple(
-            c
-            for c in active_constraints
+            c for c in active_constraints
             if _matches_constraint_phrase(c, output_lower)
         )
         constraint_check = ConstraintViolationResult(
@@ -244,8 +274,8 @@ def _intent_alignment_score(intent_tokens: set[str], output: str) -> float:
     if not output.strip():
         return 0.0
     intent_text = " ".join(intent_tokens)
-    e1 = _semantic_model.encode(intent_text)
-    e2 = _semantic_model.encode(output)
+    e1 = _encode_cached(intent_text)
+    e2 = _encode_cached(output)
     return float(np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2)))
 
 
@@ -253,6 +283,13 @@ def _has_numeric_drift(intent: str, output: str) -> bool:
     intent_nums = set(re.findall(r'\d+', intent))
     output_nums = set(re.findall(r'\d+', output))
     return intent_nums != output_nums
+
+
+def _has_scope_creep(intent: str, output: str) -> bool:
+    intent_tokens = _tokenize(intent)
+    output_tokens = _tokenize(output)
+    extra = output_tokens - intent_tokens
+    return len(extra) > 5
 
 
 def _matches_constraint_phrase(constraint: str, output_lower: str) -> bool:
