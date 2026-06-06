@@ -2,21 +2,22 @@ import streamlit as st
 import time
 from datetime import datetime
 import hashlib
+import json
 
 from sip import SIPMiddlewarePipeline
-from telemetry import emit_event  # 🚀 REAL TELEMETRY IMPORTED HERE
+from telemetry import emit_event, load_events
 
 # -----------------------------
 # CONFIG
 # -----------------------------
 st.set_page_config(
-    page_title="AI Intent Checker",
+    page_title="SIP AI Integrity Checker",
     page_icon="🧠",
     layout="centered"
 )
 
 # -----------------------------
-# SIP BACKEND (HIDDEN INTELLIGENCE)
+# SIP PIPELINE (NO HEAVY MODEL)
 # -----------------------------
 @st.cache_resource
 def get_sip():
@@ -29,69 +30,34 @@ def get_sip():
 sip = get_sip()
 
 # -----------------------------
-# SESSION STORAGE (FOR UI DISPLAY)
+# TELEMETRY CACHE (FAST LOAD)
 # -----------------------------
-if "telemetry" not in st.session_state:
-    st.session_state.telemetry = []
-
-# -----------------------------
-# UI HEADER (NON-TECH LANGUAGE)
-# -----------------------------
-st.title("🧠 AI Output Checker")
-st.caption("Make sure AI actually did what you asked — before you trust it.")
-
-st.markdown("""
-### ⚡ Why this exists
-AI sometimes:
-- misunderstands your request
-- changes numbers
-- adds unwanted actions
-- ignores constraints
-
-👉 This tool checks that automatically.
-""")
-
-st.divider()
+@st.cache_data(ttl=5)
+def get_events():
+    return load_events(10)
 
 # -----------------------------
-# QUICK EXAMPLES (REAL WORLD)
+# UI
 # -----------------------------
-st.subheader("⚡ Try examples")
-
-col1, col2, col3 = st.columns(3)
-
-def set_case(intent, output):
-    st.session_state.intent = intent
-    st.session_state.output = output
-
-with col1:
-    st.button("💸 Money Error", on_click=set_case,
-              args=("Refund $50 to user", "Refund $500 to user"))
-
-with col2:
-    st.button("⚠️ Wrong Action", on_click=set_case,
-              args=("Delete my account", "Create a new account"))
-
-with col3:
-    st.button("✅ Correct Case", on_click=set_case,
-              args=("Cancel subscription", "Your subscription is cancelled"))
+st.title("🧠 SIP AI Integrity Checker")
+st.caption("Detect when AI deviates from your intent")
 
 st.divider()
 
 # -----------------------------
 # INPUT
 # -----------------------------
-intent = st.text_area("🧾 What did you ask AI to do?", height=80, key="intent")
-output = st.text_area("🤖 What AI actually said/did", height=80, key="output")
+intent = st.text_area("Intent (What you asked AI)", height=80)
+output = st.text_area("Output (What AI produced)", height=80)
 
-run = st.button("🔍 Check AI Output", type="primary", use_container_width=True)
+run = st.button("🚀 Check Integrity", use_container_width=True)
 
 # -----------------------------
-# EXECUTION
+# RUN SIP
 # -----------------------------
 if run:
     if not intent or not output:
-        st.warning("Please fill both fields.")
+        st.warning("Please fill both fields")
         st.stop()
 
     start = time.time()
@@ -100,83 +66,72 @@ if run:
     result = sip.run(output)
 
     latency = round(time.time() - start, 3)
+
     status = result.status
 
-    # -----------------------------
-    # SIMPLE HUMAN RESULT (NO TECH WORDS)
-    # -----------------------------
     st.divider()
-    st.subheader("📊 Result")
+    st.subheader("Result")
 
     if status == "accepted":
-        st.success("🟢 Good — AI understood your request correctly.")
+        st.success("🟢 AI followed your instruction correctly")
     elif status == "repair_required":
-        st.warning("🟡 AI slightly misunderstood your request.")
+        st.warning("🟡 AI slightly deviated from intent")
     else:
-        st.error("🔴 AI got it wrong or unsafe.")
+        st.error("🔴 AI failed to follow instruction")
 
     # -----------------------------
-    # SIMPLE BREAKDOWN (HUMAN READABLE)
+    # SIMPLE EXPLANATION
     # -----------------------------
     st.markdown("### What happened")
 
-    failure_map = {
-        "drift": "AI changed the meaning",
-        "intent_alignment": "AI didn’t fully understand your request",
-        "constraint_violation": "AI broke a rule or instruction"
+    mapping = {
+        "drift": "Meaning changed",
+        "intent_alignment": "Did not fully follow intent",
+        "constraint_violation": "Broke rule or constraint"
     }
 
     if result.decision.failure_codes:
-        for code in result.decision.failure_codes:
-            st.write("• " + failure_map.get(code, "Unknown issue"))
+        for c in result.decision.failure_codes:
+            st.write("•", mapping.get(c, c))
     else:
-        st.write("• Everything matched your request")
+        st.write("• Perfect match")
 
     # -----------------------------
-    # OPTIONAL DETAILS (COLLAPSIBLE)
+    # TECH DETAILS
     # -----------------------------
-    with st.expander("🔬 Technical details (for developers)"):
+    with st.expander("Technical details"):
         st.json({
             "status": status,
             "latency": latency,
-            "failure_codes": result.decision.failure_codes,
+            "drift": result.evaluation.drift_check.drift,
+            "alignment": result.evaluation.intent_alignment.score,
             "signature": result.decision.signature
         })
 
     # -----------------------------
-    # 🧬 EMIT EVENT TO IMMUTABLE TELEMETRY STORE (JSONL)
+    # TELEMETRY (LIGHTWEIGHT)
     # -----------------------------
-    # Privacy Move: If enterprise clients want anonymity, we hash payloads
-    telemetry_payload = {
-        "event_type": "sip_runtime_check",
-        "intent": intent, 
+    event = {
+        "event_type": "sip_check",
+        "intent": intent,
         "output": output,
-        "status": status.lower(),
-        "latency": latency,
-        "failure_codes": list(result.decision.failure_codes),
+        "status": status,
+        "drift": result.evaluation.drift_check.drift,
+        "alignment": result.evaluation.intent_alignment.score,
         "signature": result.decision.signature
     }
-    
-    # Write to local JSONL log file via our core module
-    emit_event(telemetry_payload)
 
-    # local memory refresh for immediate UI sync
-    st.session_state.telemetry.append(telemetry_payload)
+    emit_event(event)
 
 # -----------------------------
-# BACKGROUND HISTORY (THE NETWORK MOAT LAYER)
+# TELEMETRY DASHBOARD
 # -----------------------------
-from telemetry import load_events
+events = get_events()
 
-# Load real telemetry lines from sip_events.jsonl instead of just session state
-persisted_events = load_events(10)
-
-if persisted_events:
+if events:
     st.divider()
-    st.subheader("📡 Live SIP Event Stream (Telemetry Ledger)")
-    st.caption("Immutable real-time logs loaded directly from the system storage layer.")
+    st.subheader("📡 Recent SIP Activity")
 
-    for e in reversed(persisted_events):
-        icon = "🟢" if e["status"] == "accepted" else ("🟡" if e["status"] == "repair_required" else "🔴")
-        with st.expander(f"{icon} Status: {e['status'].upper()} | Signature: {e['signature'][:8]}"):
-            st.json(e)
+    for e in reversed(events):
+        icon = "🟢" if e["status"] == "accepted" else "🟡"
+        st.write(f"{icon} {e['status']} | {e['intent'][:40]}...")
