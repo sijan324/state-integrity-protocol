@@ -74,7 +74,7 @@ print(result.is_aligned)  # False
 print(result.drift)       # e.g., 0.61
 ```
 
-`ObservationResult` also exposes `last_drift` as the latest drift-score alias.
+`ObservationResult` exposes both `drift` and `last_drift`; both reference the same latest drift score.
 
 ---
 
