@@ -29,3 +29,6 @@ jobs:
     - name: Run Tests
       run: |
         pytest tests/ -v
+
+    - name: Install dependencies
+      run: pip install -e ".[dev]"
