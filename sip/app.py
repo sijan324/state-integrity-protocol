@@ -1,10 +1,16 @@
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+sys.path.append(os.path.dirname(current_dir))
+
 import streamlit as st
 import time
 from datetime import datetime
 import hashlib
 import json
 
-from middleware import SIPMiddlewarePipeline
+from sip.middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
 
 # -----------------------------
