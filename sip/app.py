@@ -1,8 +1,10 @@
 import streamlit as st
 import time
 from datetime import datetime
+import hashlib
 
 from sip import SIPMiddlewarePipeline
+from telemetry import emit_event  # 🚀 REAL TELEMETRY IMPORTED HERE
 
 # -----------------------------
 # CONFIG
@@ -27,7 +29,7 @@ def get_sip():
 sip = get_sip()
 
 # -----------------------------
-# SESSION STORAGE (TELEMETRY)
+# SESSION STORAGE (FOR UI DISPLAY)
 # -----------------------------
 if "telemetry" not in st.session_state:
     st.session_state.telemetry = []
@@ -98,7 +100,6 @@ if run:
     result = sip.run(output)
 
     latency = round(time.time() - start, 3)
-
     status = result.status
 
     # -----------------------------
@@ -109,10 +110,8 @@ if run:
 
     if status == "accepted":
         st.success("🟢 Good — AI understood your request correctly.")
-
     elif status == "repair_required":
         st.warning("🟡 AI slightly misunderstood your request.")
-
     else:
         st.error("🔴 AI got it wrong or unsafe.")
 
@@ -145,25 +144,39 @@ if run:
         })
 
     # -----------------------------
-    # TELEMETRY (HIDDEN POWER)
+    # 🧬 EMIT EVENT TO IMMUTABLE TELEMETRY STORE (JSONL)
     # -----------------------------
-    st.session_state.telemetry.append({
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "intent": intent,
+    # Privacy Move: If enterprise clients want anonymity, we hash payloads
+    telemetry_payload = {
+        "event_type": "sip_runtime_check",
+        "intent": intent, 
         "output": output,
-        "status": status,
+        "status": status.lower(),
+        "latency": latency,
         "failure_codes": list(result.decision.failure_codes),
         "signature": result.decision.signature
-    })
+    }
+    
+    # Write to local JSONL log file via our core module
+    emit_event(telemetry_payload)
+
+    # local memory refresh for immediate UI sync
+    st.session_state.telemetry.append(telemetry_payload)
 
 # -----------------------------
-# BACKGROUND HISTORY (ONLY YOU SEE VALUE HERE)
+# BACKGROUND HISTORY (THE NETWORK MOAT LAYER)
 # -----------------------------
-if st.session_state.telemetry:
+from telemetry import load_events
+
+# Load real telemetry lines from sip_events.jsonl instead of just session state
+persisted_events = load_events(10)
+
+if persisted_events:
     st.divider()
-    st.subheader("📜 Session History (Hidden Intelligence Layer)")
+    st.subheader("📡 Live SIP Event Stream (Telemetry Ledger)")
+    st.caption("Immutable real-time logs loaded directly from the system storage layer.")
 
-    for t in reversed(st.session_state.telemetry[-10:]):
-        st.write(
-            f"[{t['time']}] {t['status'].upper()} — {t['intent'][:50]}..."
-        )
+    for e in reversed(persisted_events):
+        icon = "🟢" if e["status"] == "accepted" else ("🟡" if e["status"] == "repair_required" else "🔴")
+        with st.expander(f"{icon} Status: {e['status'].upper()} | Signature: {e['signature'][:8]}"):
+            st.json(e)
