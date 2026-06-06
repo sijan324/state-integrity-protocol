@@ -119,6 +119,7 @@ class SIPMiddlewarePipeline:
         self._observer = FidelityObserver(anchor=self._anchor, embed_fn=embed_fn)
 
         self._intent_text: Optional[str] = None
+        self._intent_tokens: set[str] = set()
         self._rejection_count = 0
 
     @property
@@ -126,14 +127,20 @@ class SIPMiddlewarePipeline:
         return self._observer.history
 
     def anchor(self, intent: str) -> List[float]:
+        if not intent.strip():
+            raise ValueError("intent must be a non-empty string")
         self._observer.reset()
         self._rejection_count = 0
         self._intent_text = intent
+        self._intent_tokens = _tokenize(intent)
         return self._anchor.set(intent)
 
     def evaluate(
         self, output: str, constraints: Optional[Sequence[str]] = None
     ) -> MiddlewareEvaluation:
+        if self._intent_text is None:
+            raise RuntimeError("Anchor not set. Call anchor() before evaluate().")
+
         drift = self._observer.observe(output)
         drift_check = DriftCheckResult(
             drift=drift,
@@ -141,7 +148,9 @@ class SIPMiddlewarePipeline:
             passed=drift <= self._drift_threshold,
         )
 
-        intent_score = _intent_alignment_score(self._intent_text or "", output)
+        intent_score = _intent_alignment_score(
+            intent_tokens=self._intent_tokens, output=output
+        )
         intent_alignment = IntentAlignmentResult(
             score=intent_score,
             threshold=self._intent_alignment_threshold,
@@ -151,8 +160,11 @@ class SIPMiddlewarePipeline:
         active_constraints = tuple(
             self._constraints if constraints is None else constraints
         )
+        output_lower = output.lower()
         violations = tuple(
-            c for c in active_constraints if c.lower() in output.lower()
+            c
+            for c in active_constraints
+            if _matches_constraint_phrase(c, output_lower)
         )
         constraint_check = ConstraintViolationResult(
             constraints=active_constraints,
@@ -193,32 +205,30 @@ class SIPMiddlewarePipeline:
     def run(
         self, output: str, constraints: Optional[Sequence[str]] = None
     ) -> PipelineResult:
+        if self._intent_text is None:
+            raise RuntimeError("Anchor not set. Call anchor() before run().")
+
         evaluation = self.evaluate(output=output, constraints=constraints)
         decision = self.verify_and_sign(evaluation)
+        if not decision.accepted:
+            self._rejection_count += 1
 
-        if decision.accepted:
-            attempts_used = self._rejection_count
-            attempts_remaining = max(0, self._max_retries - self._rejection_count)
-            return PipelineResult(
-                status="accepted",
-                evaluation=evaluation,
-                decision=decision,
-                attempts_used=attempts_used,
-                attempts_remaining=attempts_remaining,
-                repair_instructions=(),
+        rejection_count = self._rejection_count
+        attempts_used = rejection_count
+        attempts_remaining = max(0, self._max_retries - rejection_count)
+        status = "accepted"
+        repair_instructions: Tuple[str, ...] = ()
+        if not decision.accepted:
+            attempts_remaining = max(0, self._max_retries - rejection_count + 1)
+            status = (
+                "repair_required"
+                if self._rejection_count <= self._max_retries
+                else "rejected"
             )
-
-        self._rejection_count += 1
-        attempts_used = self._rejection_count
-        attempts_remaining = max(0, self._max_retries - self._rejection_count)
-        status = (
-            "repair_required"
-            if self._rejection_count <= self._max_retries
-            else "rejected"
-        )
-        repair_instructions = tuple(
-            _repair_instruction_for_code(code) for code in decision.failure_codes
-        )
+            repair_instructions = tuple(
+                _repair_instruction_for_code(code)
+                for code in decision.failure_codes
+            )
         return PipelineResult(
             status=status,
             evaluation=evaluation,
@@ -233,13 +243,20 @@ def _tokenize(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
-def _intent_alignment_score(intent: str, output: str) -> float:
-    intent_tokens = _tokenize(intent)
+def _intent_alignment_score(intent_tokens: set[str], output: str) -> float:
     if not intent_tokens:
         return 1.0
     output_tokens = _tokenize(output)
     overlap = len(intent_tokens.intersection(output_tokens))
     return overlap / len(intent_tokens)
+
+
+def _matches_constraint_phrase(constraint: str, output_lower: str) -> bool:
+    phrase = constraint.strip().lower()
+    if not phrase:
+        return False
+    pattern = r"\b" + re.escape(phrase) + r"\b"
+    return re.search(pattern, output_lower) is not None
 
 
 def _reason_for_code(code: str, evaluation: MiddlewareEvaluation) -> str:

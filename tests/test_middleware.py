@@ -112,7 +112,7 @@ def test_verify_and_sign_is_deterministic_for_same_evaluation():
     assert decision_a.signature == decision_b.signature
 
 
-def test_repair_loop_exhausts_to_rejected():
+def test_repair_loop_reaches_max_retries_and_rejects():
     vecs = {
         "intent": [1.0, 0.0],
         "bad intent": [0.0, 1.0],
@@ -129,9 +129,10 @@ def test_repair_loop_exhausts_to_rejected():
     second = pipeline.run("bad intent")
 
     assert first.status == "repair_required"
-    assert first.attempts_remaining == 0
+    assert first.attempts_remaining == 1
     assert second.status == "rejected"
     assert second.attempts_used == 2
+    assert second.attempts_remaining == 0
 
 
 def test_anchor_resets_repair_loop_state():
@@ -179,3 +180,28 @@ def test_per_call_constraints_override_defaults():
 
     assert result.decision.failure_codes == ("constraint_violation",)
     assert result.evaluation.constraint_check.constraints == ("unsafe",)
+
+
+def test_constraint_check_uses_word_boundary_matching():
+    vecs = {
+        "intent": [1.0, 0.0],
+        "intent release notes": [1.0, 0.0],
+    }
+    pipeline = SIPMiddlewarePipeline(
+        embed_fn=_make_embed(vecs),
+        drift_threshold=0.15,
+        intent_alignment_threshold=0.5,
+        constraints=("leak",),
+    )
+    pipeline.anchor("intent")
+
+    result = pipeline.run("intent release notes")
+
+    assert result.status == "accepted"
+    assert result.decision.failure_codes == ()
+
+
+def test_anchor_rejects_blank_intent():
+    pipeline = SIPMiddlewarePipeline()
+    with pytest.raises(ValueError, match="non-empty"):
+        pipeline.anchor("   ")

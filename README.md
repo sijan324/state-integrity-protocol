@@ -70,7 +70,7 @@ print(result.repair_instructions)      # regeneration guidance when not accepted
 
 - `drift_threshold`: max allowed semantic drift
 - `intent_alignment_threshold`: minimum token-overlap score with anchored intent
-- `constraints`: blocked phrases checked against output text
+- `constraints`: blocked words/phrases checked against output text
 - `max_retries`: max repair attempts before terminal rejection
 - `signer`: optional custom signing function for `verify_and_sign()`
 
