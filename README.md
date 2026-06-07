@@ -60,23 +60,17 @@ print(result.drift)
 
 ---
 
-## 🔁 Example
+## Why SIP?
 
-```python
-from sip import StateIntegrityProtocol
+Without SIP:
+llm.run("refund $50") → "$500" ← silent failure
 
-sip = StateIntegrityProtocol()
+With SIP:
+sip.anchor("refund $50")
+result = sip.observe(output)
+# drift: 0.73 → caught
 
-sip.anchor("Delete user account safely")
-result = sip.observe("Create new user account")
 
-print(result.is_aligned)  # False
-print(result.drift)       # e.g., 0.61
-```
-
-`ObservationResult` exposes both `drift` and `last_drift`; both reference the same latest drift score.
-
----
 
 ## 🧱 Architecture
 
