@@ -92,23 +92,7 @@ if run:
         st.warning("⚠️ Not quite — AI changed something you didn't ask for")
     else:
         st.error("❌ No — AI did NOT follow your instruction")
-    st.divider()
-st.markdown("### 💬 Quick feedback")
-feedback = st.radio(
-    "Was this result helpful?",
-    ["✅ Yes", "❌ No", "🤔 Not sure"],
-    horizontal=True
-)
-comment = st.text_input("Any comment? (optional)")
-if st.button("Send feedback"):
-    emit_event({
-        "event_type": "feedback",
-        "helpful": feedback,
-        "comment": comment,
-        "intent": intent,
-        "status": status
-    })
-    st.success("Thank you!")
+    
     # Simple explanation
     st.markdown("### What went wrong")
     mapping = {
