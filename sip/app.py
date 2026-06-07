@@ -1,5 +1,7 @@
 import sys
 import os
+import requests
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 sys.path.append(os.path.dirname(current_dir))
@@ -9,6 +11,20 @@ import time
 
 from sip.middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
+
+# 🔗 Replace with your actual Google Apps Script Web App URL
+SHEET_URL = "your-apps-script-url"
+
+def send_to_sheet(helpful, comment, status, drift):
+    try:
+        requests.post(SHEET_URL, json={
+            "helpful": helpful,
+            "comment": comment,
+            "status": status,
+            "drift": round(drift, 3)
+        }, timeout=5)
+    except:
+        pass
 
 st.set_page_config(
     page_title="Did AI do what you asked?",
@@ -93,12 +109,22 @@ if run:
     else:
         st.error("❌ No — AI did NOT follow your instruction")
         
-    st.link_button(
-        "📝 Give us feedback (2 min)",
-        "https://forms.gle/Jm8SGDcjJvPPkNxW9",
-        use_container_width=True
-    )
-    
+    # DIRECT IN-UI FEEDBACK FORM
+    st.markdown("### 📝 Give us feedback")
+    with st.form(key="feedback_form", clear_on_submit=True):
+        helpful_rating = st.radio(
+            "Was this result accurate?",
+            options=["Yes ✅", "No ❌", "Other 💬"],
+            horizontal=True
+        )
+        user_comment = st.text_input("Quick comment (optional):")
+        submit_feedback = st.form_submit_button("Submit Feedback")
+
+        if submit_feedback:
+            rating_map = {"Yes ✅": "yes", "No ❌": "no", "Other 💬": "comment"}
+            send_to_sheet(rating_map[helpful_rating], user_comment, status, drift)
+            st.success("Thanks! Your feedback was sent directly to our ledger.")
+
     # Simple explanation
     st.markdown("### What went wrong")
     mapping = {
