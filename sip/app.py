@@ -12,7 +12,7 @@ import time
 from sip.middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
 
-SHEET_URL = "https://script.google.com/macros/s/AKfycbwdaj6E4pzJUdkR__gRT1C71aM7QX7FVGCKkZGXYcEcHbF_hIt-ubDuR4xJ4OYl0OoV/exec"
+SHEET_URL = "https://script.google.com/macros/s/AKfycbydsHRacNb0e6pWgzT3L-95gBiDTo4M_6kxBuBuit2l5yHTgIW4jGnEuey8nF0qSFqJ/exec"
 
 def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
     payload = {
@@ -25,11 +25,11 @@ def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status
         "drift": round(drift, 3)
     }
     try:
-        requests.post(
+        response = requests.post(
             SHEET_URL,
             json=payload,
             timeout=15,
-            headers={"Content-Type": "application/json"}
+            allow_redirects=True  # यो थप्नुस्
         )
         return True
     except:
