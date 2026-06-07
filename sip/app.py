@@ -12,28 +12,7 @@ import time
 from sip.middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
 
-SHEET_URL = "https://script.google.com/macros/s/AKfycbydsHRacNb0e6pWgzT3L-95gBiDTo4M_6kxBuBuit2l5yHTgIW4jGnEuey8nF0qSFqJ/exec"
-
-def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
-    payload = {
-        "makes_sense": makes_sense,
-        "use_case": use_case,
-        "accurate": accurate,
-        "use_again": use_again,
-        "suggestion": suggestion,
-        "status": status,
-        "drift": round(drift, 3)
-    }
-    try:
-        response = requests.post(
-            SHEET_URL,
-            json=payload,
-            timeout=15,
-            allow_redirects=True  # यो थप्नुस्
-        )
-        return True
-    except:
-        return False
+FORM_URL = "https://forms.gle/Jm8SGDcjJvPPkNxW9"
 
 @st.cache_resource
 def get_sip():
@@ -133,6 +112,7 @@ if run:
         help="0% = no drift. Above 65% = AI went off track."
     )
 
+    # Share section
     st.divider()
     st.markdown("## 📣 Share your result")
     st.markdown("**Show others if their AI is actually doing what they asked.**")
@@ -158,52 +138,16 @@ Built with SIP — open source AI integrity checker."""
     col3.link_button("⭐ Star on GitHub",
         "https://github.com/sijan324/state-integrity-protocol")
 
+    # Feedback section — big and clear
     st.divider()
-    st.markdown("### 📝 Help us improve — takes 30 seconds")
-
-    with st.form(key="feedback_form", clear_on_submit=True):
-        makes_sense = st.radio(
-            "Did the result make sense?",
-            options=["Yes", "No", "Somewhat"],
-            horizontal=True
-        )
-        use_case = st.text_input(
-            "What did you check? *",
-            placeholder="e.g. chatbot output, AI email, agent response..."
-        )
-        accurate = st.radio(
-            "Was the result accurate?",
-            options=["Yes", "No", "Not Sure"],
-            horizontal=True
-        )
-        use_again = st.radio(
-            "Would you use this again?",
-            options=["Yes", "No", "Maybe"],
-            horizontal=True
-        )
-        suggestion = st.text_area(
-            "Any suggestion? (optional)",
-            placeholder="What would make this more useful?"
-        )
-
-        submit_feedback = st.form_submit_button(
-            "🚀 Submit Feedback",
-            use_container_width=True
-        )
-
-        if submit_feedback:
-            if not use_case.strip():
-                st.error("Please fill what you checked.")
-            else:
-                with st.spinner("Sending..."):
-                    sent = send_to_sheet(
-                        makes_sense, use_case, accurate,
-                        use_again, suggestion, status, drift
-                    )
-                if sent:
-                    st.success("✅ Thanks! Feedback received.")
-                else:
-                    st.error("Failed to send. Try again.")
+    st.markdown("## 💬 Was this helpful?")
+    st.markdown("**Your feedback helps us improve SIP. Takes 30 seconds.**")
+    st.link_button(
+        "📝 Give Feedback — 30 seconds",
+        FORM_URL,
+        use_container_width=True,
+        type="primary"
+    )
 
     with st.expander("🔬 Technical details (for developers)"):
         st.json({
