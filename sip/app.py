@@ -13,7 +13,7 @@ from sip.middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
 
 # 🔗 Replace with your actual Google Apps Script Web App URL
-SHEET_URL = "https://script.google.com/macros/s/AKfycbyd1PbxPM7Tu26umaWLc4zEtrvz3UPwsIiZfkcBm0qSy4AAptovHcS8MAF3InyH6GmX/exec"
+SHEET_URL = "https://script.google.com/macros/s/AKfycbwKzkgdsst1sVAfaIYZtdpkxhwFO--aT5JOU-cwllBVjh3BmSvStw8cAWuIfxsX4N5m/exec"
 
 def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
     try:
