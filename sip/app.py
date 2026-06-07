@@ -13,7 +13,7 @@ from sip.middleware import SIPMiddlewarePipeline
 from telemetry import emit_event, load_events
 
 # 🔗 Replace with your actual Google Apps Script Web App URL
-SHEET_URL = "https://script.google.com/macros/s/AKfycbxZiq-WOJivcoQFW9ZwcXi1yzl3YN3pL5hxlGUUl1A1j2unfZQ5OUweoNbkq9qiZJb6/exec"
+SHEET_URL = "https://script.google.com/macros/s/AKfycbyd1PbxPM7Tu26umaWLc4zEtrvz3UPwsIiZfkcBm0qSy4AAptovHcS8MAF3InyH6GmX/exec"
 
 def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
     try:
@@ -27,10 +27,12 @@ def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status
             "drift": round(drift, 3)
         }, timeout=10)
         
-       
+        # 👇 ADD THESE TWO LINES to see exactly what Google is doing
+        st.write("Status Code:", response.status_code)
+        st.write("Google's Reply:", response.text)
+        
         if response.status_code != 200:
             st.error(f"Google Error Code: {response.status_code}")
-            st.error(f"Google Error Message: {response.text}")
             
     except Exception as e:
         st.error(f"Python Connection Error: {e}")
@@ -220,10 +222,22 @@ events = get_events()
 if events:
     st.divider()
     st.subheader("🌍 What others are checking")
+    
+    # 🛡️ FIX: Remove duplicate spams (Deduplication Logic)
+    unique_events = []
+    seen_intents = set()
+    
     for e in reversed(events):
+        intent_text = e['intent'].strip().lower()
+        
+        if intent_text not in seen_intents:
+            seen_intents.add(intent_text)
+            unique_events.append(e)
+            
+        if len(unique_events) >= 5:
+            break
+
+    for e in unique_events:
         icon = "✅" if e["status"] == "accepted" else "⚠️"
         alignment_pct = round(e.get("alignment", 0) * 100)
         st.write(f"{icon} {alignment_pct}% match | \"{e['intent'][:60]}...\"")
-
-st.divider()
-st.caption("SIP is open source. Free forever. Built to make AI accountable.")
