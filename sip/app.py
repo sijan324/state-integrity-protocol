@@ -17,7 +17,7 @@ SHEET_URL = "https://script.google.com/macros/s/AKfycbxZiq-WOJivcoQFW9ZwcXi1yzl3
 
 def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
     try:
-        requests.post(SHEET_URL, json={
+        response = requests.post(SHEET_URL, json={
             "makes_sense": makes_sense,
             "use_case": use_case,
             "accurate": accurate,
@@ -25,15 +25,15 @@ def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status
             "suggestion": suggestion,
             "status": status,
             "drift": round(drift, 3)
-        }, timeout=5)
-    except:
-        pass
-
-st.set_page_config(
-    page_title="Did AI do what you asked?",
-    page_icon="🧠",
-    layout="centered"
-)
+        }, timeout=10)
+        
+       
+        if response.status_code != 200:
+            st.error(f"Google Error Code: {response.status_code}")
+            st.error(f"Google Error Message: {response.text}")
+            
+    except Exception as e:
+        st.error(f"Python Connection Error: {e}")
 
 @st.cache_resource
 def get_sip():
