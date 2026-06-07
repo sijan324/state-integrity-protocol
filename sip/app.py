@@ -16,26 +16,35 @@ from telemetry import emit_event, load_events
 SHEET_URL = "https://script.google.com/macros/s/AKfycbxOYrvymgZtUfOhrrB7qAhts21ykbxw8_ima3_NKS6MS6LWErbfrq_iJVEPTIPqeEGY/exec"
 
 def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
+    payload = {
+        "makes_sense": makes_sense,
+        "use_case": use_case,
+        "accurate": accurate,
+        "use_again": use_again,
+        "suggestion": suggestion,
+        "status": status,
+        "drift": round(drift, 3)
+    }
+    
     try:
-        response = requests.post(SHEET_URL, json={
-            "makes_sense": makes_sense,
-            "use_case": use_case,
-            "accurate": accurate,
-            "use_again": use_again,
-            "suggestion": suggestion,
-            "status": status,
-            "drift": round(drift, 3)
-        }, timeout=10)
+        # Use json.dumps to ensure the data is properly serialized for the request
+        import json
+        response = requests.post(SHEET_URL, data=json.dumps(payload), timeout=15)
         
-        # 👇 ADD THESE TWO LINES to see exactly what Google is doing
-        st.write("Status Code:", response.status_code)
-        st.write("Google's Reply:", response.text)
+        # Display response details to debug the connection
+        st.write("---")
+        st.write("Response Status Code:", response.status_code)
+        st.write("Response Text:", response.text)
         
-        if response.status_code != 200:
-            st.error(f"Google Error Code: {response.status_code}")
+        # Check if the request was successful
+        if response.status_code == 200:
+            st.success("✅ Data successfully sent to Google Sheet!")
+        else:
+            st.error(f"❌ Error occurred. Status Code: {response.status_code}")
             
     except Exception as e:
-        st.error(f"Python Connection Error: {e}")
+        # Catch and display any connection errors
+        st.error(f"❌ Connection Error: {str(e)}")
 
 @st.cache_resource
 def get_sip():
