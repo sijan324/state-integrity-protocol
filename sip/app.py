@@ -92,7 +92,11 @@ if run:
         st.warning("⚠️ Not quite — AI changed something you didn't ask for")
     else:
         st.error("❌ No — AI did NOT follow your instruction")
-    
+    st.link_button(
+    "📝 Give us feedback (2 min)",
+    "https://forms.gle/Jm8SGDcjJvPPkNxW9",
+    use_container_width=True
+)
     # Simple explanation
     st.markdown("### What went wrong")
     mapping = {
