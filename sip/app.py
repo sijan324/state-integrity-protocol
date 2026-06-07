@@ -15,11 +15,14 @@ from telemetry import emit_event, load_events
 # 🔗 Replace with your actual Google Apps Script Web App URL
 SHEET_URL = "your-apps-script-url"
 
-def send_to_sheet(helpful, comment, status, drift):
+def send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift):
     try:
         requests.post(SHEET_URL, json={
-            "helpful": helpful,
-            "comment": comment,
+            "makes_sense": makes_sense,
+            "use_case": use_case,
+            "accurate": accurate,
+            "use_again": use_again,
+            "suggestion": suggestion,
             "status": status,
             "drift": round(drift, 3)
         }, timeout=5)
@@ -109,21 +112,25 @@ if run:
     else:
         st.error("❌ No — AI did NOT follow your instruction")
         
-    # DIRECT IN-UI FEEDBACK FORM
-    st.markdown("### 📝 Give us feedback")
+    # DIRECT IN-UI FEEDBACK FORM (Matching your exact questions)
+    st.markdown("### 📝 Please Help Us To Improve")
     with st.form(key="feedback_form", clear_on_submit=True):
-        helpful_rating = st.radio(
-            "Was this result accurate?",
-            options=["Yes ✅", "No ❌", "Other 💬"],
-            horizontal=True
-        )
-        user_comment = st.text_input("Quick comment (optional):")
-        submit_feedback = st.form_submit_button("Submit Feedback")
+        makes_sense = st.radio("Did the result make sense to you? *", options=["Yes", "No", "Somewhat"], horizontal=True)
+        use_case = st.text_input("What did you use it to check? *", placeholder="e.g., A chatbot output, extraction task...")
+        accurate = st.radio("Was the result accurate? *", options=["Yes", "No", "Not Sure"], horizontal=True)
+        use_again = st.radio("Would you use this again? *", options=["Yes", "No", "Maybe"], horizontal=True)
+        suggestion = st.text_area("Any suggestion to improve? *", placeholder="Tell us what went wrong or what you'd like to see...")
+        
+        submit_feedback = st.form_submit_button("🚀 Submit Feedback")
 
         if submit_feedback:
-            rating_map = {"Yes ✅": "yes", "No ❌": "no", "Other 💬": "comment"}
-            send_to_sheet(rating_map[helpful_rating], user_comment, status, drift)
-            st.success("Thanks! Your feedback was sent directly to our ledger.")
+            # Basic validation to ensure they filled out the text fields
+            if not use_case.strip() or not suggestion.strip():
+                st.error("⚠️ Please fill out all required fields before submitting.")
+            else:
+                with st.spinner("Sending to database..."):
+                    send_to_sheet(makes_sense, use_case, accurate, use_again, suggestion, status, drift)
+                st.success("✅ Thanks! Your feedback was sent directly to our ledger.")
 
     # Simple explanation
     st.markdown("### What went wrong")
